@@ -1058,7 +1058,7 @@ app.post('/deleteCustomer', authenticateToken, async function (req, res) {
     } catch (error) {
         res.status(500).json({ error });
     }
-});
+})
 
 app.post('/deleteCustomer_A', async function (req, res) {
     try {
