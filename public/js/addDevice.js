@@ -110,5 +110,5 @@ formP.addEventListener("submit", async (event) => {
         const alertDiv = createAlert("An error occurred. Please try again later.");
         alertContainer.appendChild(alertDiv);
     }
-});
+})
 
