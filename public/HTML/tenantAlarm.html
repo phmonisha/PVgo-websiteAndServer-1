@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alarm</title>
+
+    <link rel="stylesheet" href="../CSS/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap"
+          rel="stylesheet">
+    <link
+            href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap"
+            rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script type="module" src="../js/funcFE.js"></script>
+</head>
+
+<body class="page-identifier" data-page="tenantAlarm">
+    <nav class="navbar-layout background">
+        <div class="nav-list-layout">
+            <div class="logoLayout"><img src="../images/img.PNG" alt="logo"></div>
+        </div>
+
+        <div class="rightNav">
+            <div class="burgerLayout">
+                <div class="line"></div>
+                <div class="line"></div>
+                <div class="line"></div>
+            </div>
+            <div class="logoLayoutRightNav"><img src="../images/img.PNG" alt="logo"></div>
+            <div class="profile">
+                <div class="profileImage"></div>
+                <div class="roleName">
+                </div>
+                <div><button type="submit" id="logoutButton" onclick="toggleMenu()"><div id="profileImage"></div></button></div>
+            </div>
+        </div>
+
+        <div class="sub-menu-wrap" id="subMenu">
+            <div class="sub-menu background">
+                <div class="user-info">
+
+                    <a href="tenantHome.html" class="sub-menu-link">
+                        <img src="../images/profile.png">
+                        <p>Profile</p>
+                        <span>></span>
+                    </a>
+
+                    <a href="tenantUser.html" class="sub-menu-link">
+                        <img src="../images/addUser.png">
+                        <p>Add New User</p>
+                        <span>></span>
+                    </a>
+
+                    <button class="sub-menu-link btnLogout" id="logoutButton1">
+                        <img src="../images/logout.png">
+                        <p style="text-align: left;">Logout</p>
+                        <span>></span>
+                    </button>
+
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section>
+        <div class="layoutLeft background">
+            <div>
+                <div class="logoLayout"><img src="../images/logoSquareFont.PNG" alt="logo"></div>
+            </div>
+            <ul>
+                <li class="roleHeading">
+                    <p style="font-size: 18px;" id="installerName"></p>
+                    <p style="font-size: 13px;">Installer</p>
+                </li>
+                <li><a href="tenantCustomer.html" class="sub-menu-link"><img src="../images/customer.png" class="imgWidth">
+                    <p>Customer</p>
+                    <span>></span>
+                </a></li>
+                <li><a href="tenantDevice.html" class="sub-menu-link"><img src="../images/devices.png" class="imgWidth">
+                    <p>Device</p>
+                    <span>></span>
+                </a></li>
+                <li><a href="tenantDashboard.html" class="sub-menu-link"><img src="../images/dashboard.png" class="imgWidth">
+                    <p>Dashboard</p>
+                    <span>></span>
+                </a></li>
+                <li><a href="tenantAlarm.html" class="sub-menu-link"><img src="../images/alarm-left.png" class="imgWidth">
+                    <p>Alarm</p>
+                    <span>></span>
+                </a></li>
+                <li><a href="tenantNotification.html" class="sub-menu-link"><img src="../images/notification.png" class="imgWidth">
+                    <p>Notification</p>
+                    <span>></span>
+                </a></li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="layout">
+        <div class="layoutRight">
+
+            <h2 style="text-align: center;">ALARM</h2>
+
+            <div class="up">
+                <div class="head-search">
+                    <form action="">
+                        <input type="text" id="search" placeholder="Search">
+                    </form>
+                </div>
+                <div class="head-name">
+                </div>
+            </div>
+
+            <ol class="list list-view-filter" id="table-body">
+                <!-- <li>
+                    <div class="grid-container">
+                        <div class="grid-item left-allign text-bigger">A0:B1:C2:D3:E5:F6</div>
+                        <div class="grid-item right-allign name-length">Critical</div>
+                        <div class="grid-item left-allign ">High Temperature</div>
+                        <div class="grid-item right-allign">Cleared Acknowledged</div>
+                        <div class="grid-item left-allign">Assignee: monishaputhanveet@gmail.com</div>
+                        <div class="grid-item right-allign">6165789000</div>
+                    </div>
+                </li>
+                <li>
+                    <div class="grid-container">
+                        <div class="grid-item left-allign text-bigger">C0:D1:T2:F3:E5:R6</div>
+                        <div class="grid-item right-allign name-length">Critical</div>
+                        <div class="grid-item left-allign ">Bad Weather</div>
+                        <div class="grid-item right-allign">Cleared Acknowledged</div>
+                        <div class="grid-item left-allign">monishaputhanveet@gmail.com</div>
+                        <div class="grid-item right-allign">6165789000</div>
+                    </div>
+                </li> -->
+            </ol>
+
+            <div id="pagination">
+                <button id="prev-button" class="btn-lypage">&lt;&lt;</button>
+                <div id="pagination-numbers"></div>
+                <button id="next-button" class="btn-lypage">&gt;&gt;</button>
+            </div>
+
+            <div class="topbarContent">
+                <label for="items-per-page">Items Per Page:</label>
+                <input type="number" id="items-per-page" value="5">
+            </div>
+
+        </div>
+    </section>
+
+    <div id="confirmContainer"></div>
+    <div id="alertContainer"></div>
+
+    <!-- <div>
+        <form class="logoutFloat">
+            <button type="submit" id="logoutButton">Logout</button>
+        </form>
+    </div> -->
+
+    <script src="../js/respLayout.js"></script>
+    <script type="module" src="../js/name.js"></script>
+    <script type="module" src="../js/logout.js"></script>
+</body>
+
+</html>

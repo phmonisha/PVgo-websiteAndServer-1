@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<title>Sign Me UP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css"> -->
+<link rel="stylesheet" href="/CSS/tablink.css">
+<link rel="stylesheet" href="/CSS/style.css">
+
+<style>
+    .inp {
+            display: block;
+            margin: 10px auto;
+            border-radius: 20px;
+            border: none;
+            width: 100%;
+            height: 25px;
+            text-align: center;
+        }
+
+        .submit, .submit1 {
+            display: block;
+            margin: auto;
+            border-radius: 20px;
+            border: none;
+            width: 100%;
+            height: 25px;
+            background-color: rgb(107, 101, 101);
+            color: white;
+        }
+
+        label {
+            color: whitesmoke;
+        }
+
+        .disp{
+            display: none;
+        }
+
+        @media only screen and (max-width: 1431px) {
+            .form {
+                width: 20%;
+            }
+
+            .w3-bar {
+                width: 30%;
+            }
+        }
+        @media only screen and (max-width: 1150px) {
+            .form {
+                width: 20%;
+            }
+            .w3-bar {
+                width: 30%;
+            }
+        }
+        @media only screen and (max-width: 967px) {
+            .form {
+                width: 40%;
+            }
+            .w3-bar {
+                width: 50%;
+            }
+        }
+        @media only screen and (max-width: 540px) {
+            .form {
+                width: 70%;
+            }
+            .w3-bar {
+                width: 80%;
+            }
+        }
+        @media only screen and (max-width: 490px) {
+            .form {
+                width: 100%;
+            }
+            .w3-bar {
+                width: 80%;
+            }
+        }
+</style>
+
+<body class="background">
+
+    <!-- <div class="w3-container">
+        <h2>Tabs</h2>
+        <p>Tabs are perfect for single page web applications, or for web pages capable of displaying different subjects.
+            Click on the links below.</p>
+    </div> -->
+
+    <div class="w3-bar">
+        <button class="w3-button w3-button-L" onclick="openCity('London')">Installer</button>
+        <button class="w3-button w3-button-R" onclick="openCity('Paris')">Customer</button>
+    </div>
+
+    <div id="London" class="w3-container city">
+        <div class="content">
+
+            <h2>Installer registration form</h2>
+            <form id="signinInstaller" class="form">
+    
+                <input type="text" name="title" placeholder="Title" class="inp">
+                <input type="text" name="country" placeholder="Country" class="inp">
+                <input type="text" name="state" placeholder="State" class="inp">
+                <input type="text" name="city" placeholder="City" class="inp">
+                <input type="text" name="address" placeholder="Address" class="inp">
+                <input type="text" name="address2" placeholder="Address2" class="inp">
+                <input type="number" name="zip" placeholder="Zip Code" class="inp">
+                <input type="number" name="phone" placeholder="Phone Number" class="inp">
+                <input type="email" name="email" placeholder="Email Id" class="inp">
+    
+                <input type="submit" value="Create Installer Account" class="submit">
+            </form>
+
+        </div>
+    </div>
+
+    <div id="Paris" class="w3-container city" style="display:none">
+        <div class="content">
+
+            <form id="signinCustomer" class="form disp"></form>
+
+            <h2> Customer registration form</h2>
+            <form id="signinCustomer1" class="form">
+    
+                <input type="text" name="title" placeholder="Title" class="inp">
+                <input type="text" name="country" placeholder="Country" class="inp">
+                <input type="text" name="state" placeholder="State" class="inp">
+                <input type="text" name="city" placeholder="City" class="inp">
+                <input type="text" name="address" placeholder="Address" class="inp">
+                <input type="text" name="address2" placeholder="Address2" class="inp">
+                <input type="number" name="zip" placeholder="Zip Code" class="inp">
+                <input type="number" name="phone" placeholder="Phone Number" class="inp">
+                <input type="email" name="email" placeholder="Email Id" class="inp">
+    
+                <input type="submit" value="Create Customer Account" class="submit1">
+            </form>
+    
+        </div>
+    </div>
+
+    <script>
+        function openCity(cityName) {
+            var i;
+            var x = document.getElementsByClassName("city");
+            for (i = 0; i < x.length; i++) {
+                x[i].style.display = "none";
+            }
+            document.getElementById(cityName).style.display = "block";
+        }
+    </script>
+
+<script type="module" src="../js/addTenant.js"></script>
+<script type="module" src="../js/addCustomer.js"></script>
+
+</body>
+
+</html>

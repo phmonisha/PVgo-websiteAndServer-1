@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirm Dialog Test</title>
+  <style>
+    .popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 1000;
+      width: 100%;
+      height: 100%;
+      display: none;
+    }
+
+    .custom-confirm {
+      background-color: #fff;
+      width: 400px;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .confirmTop {
+      background-color: #007bff;
+      color: #fff;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .innerConfirmTop {
+      font-size: 20px;
+    }
+
+    .close-icon {
+      cursor: pointer;
+      font-size: 20px;
+    }
+
+    .confirmCont {
+      padding: 20px;
+    }
+
+    .message {
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+
+    .icon {
+      margin-right: 10px;
+    }
+
+    .ok-button,
+    .cancel-button {
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      border-radius: 5px;
+      margin-right: 10px;
+    }
+
+    .ok-button:hover,
+    .cancel-button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+
+<div id="alertContainer"></div>
+
+<script>
+  function createConfirm(message, callback) {
+    const alertContainer = document.getElementById("alertContainer");
+
+    const confirmDiv = document.createElement('div');
+    confirmDiv.className = 'popup';
+    confirmDiv.style.display = 'block';
+
+    const customConfirmDiv = document.createElement('div');
+    customConfirmDiv.className = 'custom-confirm';
+
+    const confirmTopDiv = document.createElement('div');
+    confirmTopDiv.className = 'confirmTop';
+
+    const innerConfirmTopDiv = document.createElement('div');
+    innerConfirmTopDiv.className = 'innerConfirmTop';
+    innerConfirmTopDiv.innerText = 'Confirmation';
+
+    const closeIconSpan = document.createElement('span');
+    closeIconSpan.className = 'close-icon';
+    closeIconSpan.innerText = '✖';
+    closeIconSpan.addEventListener('click', function () {
+      alertContainer.removeChild(confirmDiv);
+    });
+
+    confirmTopDiv.appendChild(innerConfirmTopDiv);
+    confirmTopDiv.appendChild(closeIconSpan);
+
+    const confirmContDiv = document.createElement('div');
+    confirmContDiv.className = 'confirmCont';
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message';
+    messageDiv.innerHTML = `<span class="icon">⚠️</span> ${message}`;
+
+    const cancelButton = document.createElement('button');
+    cancelButton.className = 'cancel-button';
+    cancelButton.innerText = 'Cancel';
+    cancelButton.addEventListener('click', function () {
+      alertContainer.removeChild(confirmDiv);
+    });
+
+    const okButton = document.createElement('button');
+    okButton.className = 'ok-button';
+    okButton.innerText = 'OK';
+    okButton.addEventListener('click', function () {
+      callback();
+      alertContainer.removeChild(confirmDiv);
+    });
+
+    confirmContDiv.appendChild(messageDiv);
+    confirmContDiv.appendChild(cancelButton);
+    confirmContDiv.appendChild(okButton);
+
+    customConfirmDiv.appendChild(confirmTopDiv);
+    customConfirmDiv.appendChild(confirmContDiv);
+
+    confirmDiv.appendChild(customConfirmDiv);
+
+    return confirmDiv;
+  }
+
+  const alertContainer = document.getElementById("alertContainer");
+
+  function testConfirm() {
+    const confirmDialog = createConfirm("Are you sure you want to proceed?", function() {
+      alert("Confirmed!");
+    });
+
+    alertContainer.appendChild(confirmDialog);
+  }
+</script>
+
+<button onclick="testConfirm()">Test Confirm Dialog</button>
+
+</body>
+</html>

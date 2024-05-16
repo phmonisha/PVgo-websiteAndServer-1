@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Device</title>
+
+    <link rel="stylesheet" href="../CSS/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap"
+          rel="stylesheet">
+    <link
+            href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap"
+            rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script type="module" src="../js/funcFE.js"></script>
+    <style>
+
+        .inp {
+            display: block;
+            margin: 12px auto !important;
+            padding: 5px 0px !important;
+            border: none !important;
+            border-radius: 20px !important;
+            width: 100% !important;
+            height: 20px;
+            text-align: center;
+            box-shadow: 5px 5px 10px rgba(37, 11, 11, 0.3);
+        }
+
+        #add,
+        #edit,
+        #pannel {
+            display: block;
+            margin: 20px auto !important;
+            border-radius: 20px !important;
+            width: 100% !important;
+            height: 35px !important;
+            border: none;
+            background-color: #8bc63f !important;
+            /* rgba(44, 20, 20, 0.849); */
+            color: rgba(37, 11, 11, 0.849);
+            /* box-shadow: 5px 5px 10px rgba(37, 11, 11, 0.3); */
+        }
+
+        .buttonProv {
+            padding: 12px 5px;
+            font-size: 16px;
+            white-space: normal;
+            overflow: visible;
+            text-overflow: clip;
+            background-color: #8bc63f;
+            border: none;
+            color: white;
+            /* rgba(37, 11, 11, 0.849); */
+            cursor: pointer;
+            border-radius: 3px;
+            font-family: 'Ubuntu', sans-serif;
+            min-width: 80px;
+        }
+
+        .buttonProv:hover {
+            background-color: rgb(203, 201, 201);
+        }
+
+
+        @media only screen and (max-width: 490px) {
+            .form4, .form5 {
+                max-width: 100% !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="page-identifier" data-page="customerDevice">
+<nav class="navbar-layout background">
+    <div class="nav-list-layout">
+        <div class="logoLayout"><img src="../images/img.PNG" alt="logo"></div>
+    </div>
+
+    <div class="rightNav">
+        <div class="burgerLayout">
+            <div class="line"></div>
+            <div class="line"></div>
+            <div class="line"></div>
+        </div>
+        <div class="logoLayoutRightNav"><img src="../images/img.PNG" alt="logo"></div>
+        <div class="profile">
+            <div class="profileImage"></div>
+            <div class="roleName"></div>
+            <div><button type="submit" id="logoutButton" onclick="toggleMenu()"><div id="profileImage"></div></button></div>
+
+
+            <!-- <div><img src="../images/logout_icon.png" alt="profileImage"></div> -->
+        </div>
+    </div>
+
+    <div class="sub-menu-wrap" id="subMenu">
+        <div class="sub-menu background">
+            <div class="user-info">
+
+                <a href="customerHome.html" class="sub-menu-link">
+                    <img src="../images/profile.png">
+                    <p>Profile</p>
+                    <span>></span>
+                </a>
+
+                <a href="customerUser.html" class="sub-menu-link">
+                    <img src="../images/addUser.png">
+                    <p>Add New User</p>
+                    <span>></span>
+                </a>
+
+                <button class="sub-menu-link btnLogout" id="logoutButton1">
+                    <img src="../images/logout.png">
+                    <p style="text-align: left;">Logout</p>
+                    <span>></span>
+                </button>
+
+            </div>
+        </div>
+    </div>
+</nav>
+
+<section>
+    <div class="layoutLeft background">
+        <div>
+            <div class="logoLayout"><img src="../images/logoSquareFont.PNG" alt="logo"></div>
+        </div>
+        <ul>
+            <li class="roleHeading">
+                <p style="font-size: 18px;" id="customerName"></p>
+                <p style="font-size: 13px;">Customer</p>
+            </li>
+            <li><a href="customerDevice.html" class="sub-menu-link"><img src="../images/devices.png" class="imgWidth">
+                <p>Device</p>
+                <span>></span>
+            </a></li>
+            <li><a href="customerDashboard.html" class="sub-menu-link"><img src="../images/dashboard.png" class="imgWidth">
+                <p>Dashboard</p>
+                <span>></span>
+            </a></li>
+            <li><a href="customerAlarm.html" class="sub-menu-link"><img src="../images/alarm-left.png" class="imgWidth">
+                <p>Alarm</p>
+                <span>></span>
+            </a></li>
+            <li><a href="customerNotification.html" class="sub-menu-link"><img src="../images/notification.png" class="imgWidth">
+                <p>Notification</p>
+                <span>></span>
+            </a></li>
+        </ul>
+    </div>
+</section>
+
+<section class="layout">
+    <div class="layoutRight">
+
+        <h2 style="text-align: center;">DEVICE</h2>
+
+        <div class="up">
+            <div class="head-search">
+                <form action="">
+                    <input type="text" id="search" placeholder="Search">
+                </form>
+            </div>
+            <div class="head-name">
+                <!--                <button class="addDeviceBtn" id="open-popup"><img src="../images/plus_icon.png"-->
+                <!--                                                                  alt="profileImage"></button>-->
+                <button class="buttonProv" id="open-popup">Add device</button>
+            </div>
+        </div>
+
+        <div id="popup" class="popup">
+            <div class="popup-content">
+                <!-- Popup content goes here -->
+
+                <div class="alertTop">
+                    <div class="innerAlertTop"></div>
+                    <span class="close" id="close-popup">✖</span>
+                </div>
+
+                <div class="alertCont"  style="margin-bottom: 10px">
+                    <div class="message">
+                        <span class="icon" style="display: none;"></span>
+                        Please enter MAC address of the PVgo device which you would like to include into your account. <br><br> Also, please download the 'PVgo' application - <img src="../images/logoSquareFont.PNG" alt="profileImage" style="width: 30px; border-radius: 5px;"> from google play store or Apple store to provision your new PVgo.
+                    </div>
+                </div>
+
+                <div style="width: 90%">
+
+                    <form id="popup-form" class="form4">
+                        <input type="text" name="device" placeholder="Device serial number" id="deviceName" class="inp">
+
+                        <input type="submit" value="Add" id="add">
+                    </form>
+
+                </div>
+            </div>
+        </div>
+
+        <ol class="list list-view-filter" id="table-body">
+            <!-- <li>
+        <div class="grid-container">
+            <div class="grid-item left-allign text-bigger">A0:B1:C2:D3:E5:F6</div>
+            <div class="grid-item left-allign name-length">Charizald Pikachuuuuuttt</div>
+            <div class="grid-item right-allign mergGrid2 sub-grid-container">
+                <div class="sub-grid-item"></div>
+                <div class="sub-grid-item"></div>
+                <div class="sub-grid-item"></div>
+                <div class="sub-grid-item"></div>
+                <div class="sub-grid-item"></div>
+                <div class="sub-grid-item"></div>
+                <div class="sub-grid-item"></div>
+                <div class="sub-grid-item"></div>
+                <div class="sub-grid-item"></div>
+                <div class="sub-grid-item addDevice">
+                    <button class="icon-button"><img src="../images/delete_Icon.png" alt="logo"></button>
+                </div>
+            </div>
+            <div class="grid-item left-allign">Curvy</div>
+            <div class="grid-item right-allign">165789000</div>
+        </div>
+    </li>
+    <li>
+        <div class="grid-container">
+            <div class="grid-item left-allign text-bigger">A0:B1:C2:D3:E5:F6</div>
+            <div class="grid-item left-allign name-length">Charizald Pikachuuuuuttt</div>
+            <div class="grid-item right-allign mergGrid2 sub-grid-container">
+                <div class="sub-grid-item"></div>
+                <div class="sub-grid-item"></div>
+                <div class="sub-grid-item"></div>
+                <div class="sub-grid-item"></div>
+                <div class="sub-grid-item"></div>
+                <div class="sub-grid-item"></div>
+                <div class="sub-grid-item"></div>
+                <div class="sub-grid-item"></div>
+                <div class="sub-grid-item"></div>
+                <div class="sub-grid-item addDevice">
+                    <button class="icon-button"><img src="../images/delete_Icon.png" alt="logo"></button>
+                </div>
+            </div>
+            <div class="grid-item left-allign">Curvy</div>
+            <div class="grid-item right-allign">165789000</div>
+        </div>
+    </li> -->
+        </ol>
+
+        <div id="e-popup" class="popup">
+            <div class="popup-content">
+                <!-- Popup content goes here -->
+
+                <div class="alertTop">
+                    <div class="innerAlertTop"></div>
+                    <span class="close" id="e-close-popup">✖</span>
+                </div>
+
+                <div class="alertCont" style="margin-bottom: 10px">
+                    <div class="message">
+                        <span class="icon" style="display: none;"></span>
+                        You can modify device label below for the ease of identifying your
+                        device.
+                    </div>
+                </div>
+
+                <div style="width: 90%">
+                    <form id="editDeviceForm" class="form4">
+                        <input type="text" name="lable" placeholder="Label" id="lable" class="inp">
+                        <input type="submit" value="Modify label" id="edit">
+                    </form>
+                </div>
+
+                <div class="alertCont" style="margin-bottom: 10px; margin-top: 50px;">
+                    <div class="message">
+                        <span class="icon" style="display: none;"></span>
+                        Click on Pannel info below to edit your pannel details.
+                    </div>
+                </div>
+
+                <div style="width: 90%">
+                    <form id="pannelForm" class="form4">
+                        <input type="submit" value="Pannel info" id="pannel">
+                    </form>
+                </div>
+
+            </div>
+        </div>
+
+
+        <div id="pagination">
+            <button id="prev-button" class="btn-lypage">&lt;&lt;</button>
+            <div id="pagination-numbers"></div>
+            <button id="next-button" class="btn-lypage">&gt;&gt;</button>
+        </div>
+
+        <div class="topbarContent">
+            <label for="items-per-page">Items Per Page:</label>
+            <input type="number" id="items-per-page" value="5">
+        </div>
+
+    </div>
+</section>
+
+<div id="alertContainer"></div>
+<div id="confirmContainer"></div>
+
+<!--    <script>-->
+<!--        document.addEventListener('DOMContentLoaded', function () {-->
+<!--    // Get all elements with the class "sentence"-->
+<!--    var sentenceElements = document.getElementsByClassName('name-length');-->
+
+<!--    // Loop through each sentence element-->
+<!--    for (var i = 0; i < sentenceElements.length; i++) {-->
+<!--        // Get the text content of the sentence-->
+<!--        var sentence = sentenceElements[i].textContent;-->
+
+<!--        // Display only the first 4 letters-->
+<!--        var firstFourLetters = sentence.substring(0, 20);-->
+
+<!--        // Update the content of the sentence element-->
+<!--        sentenceElements[i].textContent = firstFourLetters;-->
+<!--    }-->
+<!--});-->
+
+<!--    </script>-->
+
+<script src="../js/respLayout.js"></script>
+<script type="module" src="../js/name.js"></script>
+<script type="module" src="../js/logout.js"></script>
+
+
+<script>
+        // JavaScript to show the popup
+        document.getElementById("open-popup").addEventListener("click", function () {
+            document.getElementById("popup").style.display = "block";
+        });
+
+        // JavaScript to hide the popup
+        document.getElementById("close-popup").addEventListener("click", function () {
+            document.getElementById("popup").style.display = "none";
+        });
+
+    </script>
+
+<script>
+        document.getElementById("e-close-popup").addEventListener("click", function () {
+            document.getElementById("e-popup").style.display = "none";
+        });
+
+    </script>
+
+<!-- <script>
+        document.getElementById('add').addEventListener('click', function () {
+            event.preventDefault();
+            window.location.href = '../HTML/provisionStart.html';
+        });
+    </script> -->
+
+<script type="module" src="../js/addDevice.js"></script>
+
+<!-- <script>
+    let subMenu = document.getElementById("subMenu");
+
+    function toggleMenu(){
+        subMenu.classList.toggle("open-menu");
+    }
+</script> -->
+
+</body>
+
+</html>

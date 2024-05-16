@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@500&display=swap" rel="stylesheet">
+
+
+    <link rel="stylesheet" href="/CSS/style.css">
+
+    <style>
+        body {
+            /* background-image: URL("/images/771486081870.png"); */
+            font-family: 'Ubuntu', sans-serif;
+        }
+
+
+        /* #BOX1 {
+            display: inline-block;
+            border: 2px solid red;
+            position: absolute;
+            top: 5px;
+            Left: 5px;
+        }
+
+        #BOX1 img {
+            width: 100px;
+            display: block;
+            margin: 0px auto;
+            /* filter: invert(80%); */
+        /* } */
+        */
+        /* #BOX1 p {
+            margin: 1px;
+            color: rgb(172, 178, 208);
+        } */
+
+        /* #BOX2 {
+            border: 2px solid grey;
+            display: block;
+            margin: 0px auto;
+            width: 400px;
+            background-color: grey;
+            border-radius: 50px;
+        } */
+
+
+
+        .Navigation ul li {
+            list-style: none;
+            display: inline-block;
+            padding: 3px 10px;
+        }
+
+        .Navigation ul li a {
+            text-decoration: none;
+            color: white;
+            font-size: 20px;
+        }
+
+        .form {
+            /* border: 2px solid grey; */
+            width: 17%;
+            height: 350px;
+            /* margin: 20px 100px auto; */
+            /* border: 2px solid grey; */
+            padding: 20px 0;
+        }
+
+        .content {
+            margin: 8% auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        h2 {
+            /* text-align: center;
+            margin: 5px auto; */
+            color: rgb(172, 178, 208);
+            text-align: center;
+        }
+
+        .inp {
+            display: block;
+            margin: 10px auto;
+            border-radius: 20px;
+            border: none;
+            width: 100%;
+            height: 25px;
+            text-align: center;
+        }
+
+        .submit {
+            display: block;
+            margin: auto;
+            border-radius: 20px;
+            border: none;
+            width: 100%;
+            height: 25px;
+            background-color: rgb(107, 101, 101);
+            color: white;
+        }
+
+
+        .psw {
+            color: white;
+        }
+
+        #forgot {
+            background-color: rgb(93, 91, 91);
+            border: 2px solid grey;
+            border-radius: 2px;
+            height: 100px;
+            margin-top: 45px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        span a {
+            text-decoration: none;
+            color: white;
+        }
+
+        .cancelbtn {
+            color: black;
+            background-color: white;
+            width: 70%;
+            border-radius: 20px;
+            border: none;
+            padding: 5px;
+            margin: 5px;
+        }
+
+        label {
+            color: whitesmoke;
+        }
+
+        @media only screen and (max-width: 1431px) {
+            .form {
+                width: 20%;
+            }
+        }
+        @media only screen and (max-width: 1150px) {
+            .form {
+                width: 20%;
+            }
+        }
+        @media only screen and (max-width: 967px) {
+            .form {
+                width: 40%;
+            }
+        }
+        @media only screen and (max-width: 540px) {
+            .form {
+                width: 70%;
+            }
+        }
+        @media only screen and (max-width: 490px) {
+            .form {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body class="background">
+    <!-- <div class="BOX" id="BOX1">
+        <!-- <img src="/images/megawattpower-logo.png" alt="Image Not Found"> -->
+    <p>CURVY</p>
+    </div> -->
+
+    <!-- <div class="BOX" id="BOX2">
+        <Nav class="Navigation">
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/Customer">Customer</a></li>
+                <li><a href="/Tenant">Tenant</a></li>
+                <li><a href="/Admin">Admin</a></li>
+            </ul>
+        </Nav>
+    </div> -->
+
+    <!-- <div class="BOX" id="BOX3">
+        <button class="btn">Contact Us</button>
+        <button class="btn">Email US</button>
+    </div> -->
+
+    <div class="content">
+
+        <h2>New Installer Registration</h2>
+        <form id="registrationForm" class="form">
+
+            <input type="text" name="title" placeholder="Title" class="inp">
+            <input type="text" name="region" placeholder="Region" class="inp">
+            <input type="text" name="country" placeholder="Country" class="inp">
+            <input type="text" name="state" placeholder="State" class="inp">
+            <input type="text" name="city" placeholder="City" class="inp">
+            <input type="text" name="address" placeholder="Address" class="inp">
+            <input type="text" name="address2" placeholder="Address2" class="inp">
+            <input type="number" name="zip" placeholder="Zip Code" class="inp">
+            <input type="number" name="phone" placeholder="Phone Number" class="inp">
+            <input type="email" name="email" placeholder="Email Id" class="inp">
+            <textarea col="20" row="10" name="additionalInfo" class="inp"></textarea>
+
+            <input type="submit" value="Create Customer" class="submit">
+        </form>
+
+    </div>
+
+    <div id="vittal"></div>
+
+    <script>
+        const form = document.getElementById("registrationForm");
+        
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+        
+            const formData = new FormData(form);
+            const jsonData = {};
+        
+            formData.forEach((value, key) => {
+                jsonData[key] = value;
+            });
+        
+            const url = "/New_Tenant_Registration"; // Replace with your backend API URL
+            const option = {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(jsonData),
+                };
+        
+            try {
+                const response = await fetch(url, option);
+        
+                if (response.ok) {
+                const json = await response.json();
+                console.log(json);
+                if(json.id.entityType === 'TENANT'){
+                window.location.href = "/addNewTenantUser";
+            }
+            else{
+                alert("Couldn't add customer, try again!");
+            };
+                // Handle the server response as needed
+            } else {
+                alert("Server request failed:", response.status);
+                // Handle the error
+            }
+            } catch (error) {
+                console.error("Error:", error);
+            }
+        });
+        </script>
+
+</body>
+
+</html>

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one
+    or more contributor license agreements.  See the NOTICE file
+    distributed with this work for additional information
+    regarding copyright ownership.  The ASF licenses this file
+    to you under the Apache License, Version 2.0 (the
+    "License"); you may not use this file except in compliance
+    with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+     KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+-->
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <!--
+        Customize this policy to fit your own app's needs. For more guidance, please refer to the docs:
+            https://cordova.apache.org/docs/en/latest/
+        Some notes:
+            * https://ssl.gstatic.com is required only on Android and is needed for TalkBack to function properly
+            * Disables use of inline scripts in order to mitigate risk of XSS vulnerabilities. To change this:
+                * Enable inline JS: add 'unsafe-inline' to default-src
+        -->
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+    <meta name="viewport" content="initial-scale=1, width=device-width, viewport-fit=cover">
+    <meta name="color-scheme" content="light dark">
+    <link rel="stylesheet" href="../CSS/style.css">
+    <title>Wifi List</title>
+    <style>
+        body {
+            color: white;
+        }
+
+        .list {
+            width: 80%;
+        }
+
+        .form4 {
+            width: 17%;
+            height: 100px;
+            margin: 30px auto;
+        }
+
+        .inp {
+            display: block;
+            background-color: white;
+            color: black;
+            margin: 12px auto !important;
+            padding: 7px 0px !important;
+            border: none !important;
+            border-radius: 20px !important;
+            width: 80% !important;
+            height: 20px;
+            text-align: center;
+            box-shadow: 5px 5px 10px rgba(37, 11, 11, 0.3);
+        }
+
+        .grid-container1 {
+            display: grid;
+            grid-template-columns: auto;
+            background: none;
+            padding: 0px;
+        }
+
+        #provision {
+            display: block;
+            margin: 12px auto !important;
+            border-radius: 20px !important;
+            border: none;
+            width: 80% !important;
+            height: 35px !important;
+            border: none !important;
+            background-color: #8bc63f;
+            color: rgba(37, 11, 11, 0.849);
+            /* box-shadow: 5px 5px 10px rgba(37, 11, 11, 0.3); */
+        }
+
+        .center-allign {
+            text-align: center;
+        }
+
+        .frame {
+            width: 400px;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+
+        }
+
+        #loader {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 5px solid #8bc63f;
+            border-top: 5px solid #8bc63f;
+            border-left: 5px solid black;
+            animation: load 2s ease-in-out infinite forwards;
+        }
+
+        @keyframes load {
+            0% {
+                transform: rotate(0);
+            }
+
+            50% {
+                transform: rotate(360deg);
+            }
+
+            100% {
+                transform: rotate(720deg);
+            }
+        }
+
+        @media only screen and (max-width: 1431px) {
+            .form4 {
+                width: 20%;
+            }
+        }
+
+        @media only screen and (max-width: 1150px) {
+            .form4 {
+                width: 20%;
+            }
+        }
+
+        @media only screen and (max-width: 967px) {
+            .form4 {
+                width: 40%;
+            }
+        }
+
+        @media only screen and (max-width: 540px) {
+            .form4 {
+                width: 70%;
+            }
+        }
+
+        @media only screen and (max-width: 490px) {
+            .form4 {
+                max-width: 100% !important;
+                width: 100% !important;
+                margin: auto;
+            }
+        }
+
+
+    </style>
+    <style>
+        .list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+
+        ol li {
+            background-color: white;
+            border-radius: 3px;
+            box-shadow: 5px 5px 10px rgba(37, 11, 11, 0.3);
+            margin-bottom: 10px;
+            transition: 0.3s;
+        }
+
+
+        .list.list-view-filter {
+            flex-direction: column;
+        }
+
+        .list.list-view-filter li {
+            padding: 10px;
+            border-radius: 20px;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: auto auto;
+            background: none;
+            padding: 0px;
+        }
+
+        .grid-item {
+            background: none;
+            border: none;
+            padding: 2px;
+            font-size: 13px;
+            color: rgba(37, 11, 11, 0.849);
+        }
+
+        .left-allign {
+            text-align: left;
+        }
+
+        .right-allign {
+            text-align: right;
+        }
+
+        .text-bigger {
+            font-weight: bold;
+            color: rgba(37, 11, 11, 0.849);
+        }
+
+
+        .popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        /* Styles for the popup content */
+        .popup-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Style for the close button */
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 20px;
+        }
+    </style>
+
+</head>
+
+<body class="background">
+<div class="outerProv">
+    <div class="headProv" style="height: 10vh;">
+        <h2>IVCurvy DEVICE LIST</h2>
+    </div>
+    <div class="semiProvUp" style="justify-content:center; height: 20vh;">
+        <ol class="list list-view-filter" id="wifiList">
+
+        </ol>
+
+    </div>
+    <div class="semiProvDown" style="height: 70vh; width: 80%;">
+
+        <div class="frame" id="frame">
+            <div id="loader"></div>
+        </div>
+
+        <div id="popBlock" style="width: 100%; display: none;">
+
+            <p id="popDevName" style="text-align: center;">Enter POP for the device</p>
+
+            <form id="provisionWifi" class="form">
+                <input type="text" name="pop" placeholder="Proof of posession" class="inp inpPlaceholder" id="pop"
+                       required>
+                <button type="button" id="provision">Next</button>
+                <!--                <input type="submit" value="Next" id="provision">-->
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+<div id="confirmContainer"></div>
+<div id="alertContainer"></div>
+
+<script src="../cordova.js"></script>
+<script src="../js/index.js"></script>
+
+<script type="module" src="../js/withoutQR.js"></script>
+
+</body>
+
+</html>

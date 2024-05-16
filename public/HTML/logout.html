@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .topContainer {
+            height: 30vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .topContainer img{
+            width: 21%;
+            border-radius: 20px;
+        }
+
+        .upContainer {
+            height: 40vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .upInnerContainer {
+            height: 50%;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Helvetica';
+        }
+
+        .downContainer {
+            height: 30vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Helvetica';
+        }
+
+        .subContainer {
+            height: 100%;
+            /* margin: 0 20%; */
+            width: 80%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btnProv1 {
+            margin: 20px auto;
+            border-radius: 20px;
+            border: none;
+            height: 45px;
+            background-color: white;
+            color: rgba(37, 11, 11, 0.849);
+            /* box-shadow: 5px 5px 10px rgba(37, 11, 11, 0.3); */
+            /* box-shadow: 5px 5px 10px rgba(165, 165, 165, 0.3); */
+            width: 100%;
+            padding: 0 75px;
+        }
+
+        .decoration {
+            text-decoration: none;
+            color: rgba(37, 11, 11, 0.849) !important;
+        }
+    </style>
+    <link rel="stylesheet" href="../CSS/style.css">
+</head>
+
+<body class="background">
+<div class="topContainer">
+    <img src="../images/logoSquareFont.PNG" alt="logo">
+</div>
+<div class="upContainer">
+    <div class="upInnerContainer">
+        <div class="subContainer">
+            <div style="width: 100%;">
+                <a href="customerHome.html" class="decoration"><button
+                        class="btnProv1" style="font-size: 15px;">Profile</button></a>
+            </div>
+        </div>
+        <div class="subContainer">
+            <div style="width: 100%;">
+                <a href="customerUser.html" class="decoration"><button class="btnProv1" style="font-size: 15px;">Add new
+                    user</button></a>
+            </div>
+        </div>
+        <div class="subContainer">
+            <div style="width: 100%;">
+                <a href="customerDevice.html" class="decoration"><button
+                        class="btnProv1" style="font-size: 15px;">Back</button></a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="downContainer">
+    <div class="subContainer">
+        <div style="width: 100%;">
+            <button class="btnProv" id="logoutButton1" style="font-size: 15px; font-weight: bold;">Logout</button>
+        </div>
+    </div>
+</div>
+
+<div id="confirmContainer"></div>
+<div id="alertContainer"></div>
+
+<script type="module" src="../js/logout.js"></script>
+
+</body>
+
+</html>

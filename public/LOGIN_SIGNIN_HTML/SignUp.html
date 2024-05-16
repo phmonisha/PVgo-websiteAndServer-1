@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<title>Sign Me UP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css"> -->
+<link rel="stylesheet" href="/CSS/tablink.css">
+<link rel="stylesheet" href="/CSS/style.css">
+
+<style>
+    .inp {
+        display: block;
+        margin: 10px auto;
+        border-radius: 20px;
+        border: none;
+        width: 100%;
+        height: 25px;
+        text-align: center;
+    }
+
+    .submit {
+        display: block;
+        margin: auto;
+        border-radius: 20px;
+        border: none;
+        width: 100%;
+        height: 25px;
+        background-color: #8BC63F;
+        color: rgba(37, 11, 11, 0.849);
+    }
+
+    label {
+        color: whitesmoke;
+        text-transform: none !important;
+    }
+
+    .disp {
+        display: none;
+    }
+
+    #London {
+        height: 100vh;
+        color: whitesmoke;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .form {
+        height: 245px !important;
+        padding-bottom: none;
+        padding-top: 20px;
+    }
+
+    .content {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .margin-css {
+        margin: 35px;
+    }
+
+    @media only screen and (max-width: 1431px) {
+        .form {
+            width: 20%;
+        }
+
+        .w3-bar {
+            width: 30%;
+        }
+    }
+
+    @media only screen and (max-width: 1150px) {
+        .form {
+            width: 20%;
+        }
+
+        .w3-bar {
+            width: 30%;
+        }
+    }
+
+    @media only screen and (max-width: 967px) {
+        .form {
+            width: 40%;
+        }
+
+        .w3-bar {
+            width: 50%;
+        }
+    }
+
+    @media only screen and (max-width: 540px) {
+        .form {
+            width: 70%;
+        }
+
+        .w3-bar {
+            width: 80%;
+        }
+    }
+
+    @media only screen and (max-width: 490px) {
+        .form {
+            width: 76%;
+        }
+
+        .w3-bar {
+            width: 80%;
+        }
+    }
+</style>
+
+<body class="background">
+
+<!-- <div class="w3-container">
+    <h2>Tabs</h2>
+    <p>Tabs are perfect for single page web applications, or for web pages capable of displaying different subjects.
+        Click on the links below.</p>
+</div> -->
+
+<!-- <div class="w3-bar">
+    <button class="w3-button w3-button-L" onclick="openCity('London')">Installer</button>
+    <button class="w3-button w3-button-R" onclick="openCity('Paris')">Customer</button>
+</div> -->
+
+<div id="London">
+    <div class="content">
+
+        <p class="text-big allign">Create an account</p>
+        <p class="text-small allign margin-css">Are you a new Installer or a new Customer who recently bought a PVgo device? Please create an account.</p>
+        <form id="signinInstaller" class="form">
+
+            <input type="text" name="title" placeholder="Name*" class="inp" id="titleVerify">
+            <input type="email" name="email" placeholder="Email Id*" class="inp">
+            <input type="password" name="password" placeholder="Create Password*" class="inp">
+            <input type="password" name="confirmPassword" placeholder="Confirm Password*" class="inp">
+
+            <div id="radio-container">
+                <div>
+                    <div class="sub-radio-container">
+                        <input type="radio" id="customer" name="customerOrInstaller" value="Customer">
+                        <label for="customer">I'm a customer*</label><br>
+                    </div>
+                    <div class="sub-radio-container">
+                        <input type="radio" id="installer" name="customerOrInstaller" value="Installer">
+                        <label for="installer">I'm an installer*</label><br>
+                    </div>
+                </div>
+            </div>
+
+            <input type="submit" value="Submit" class="submit" id="submit">
+        </form>
+
+    </div>
+</div>
+
+<div id="alertContainer"></div>
+
+<script type="module" src="../js/setSignUp.js"></script>
+
+</body>
+
+</html>

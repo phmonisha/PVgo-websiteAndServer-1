@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset</title>
+
+    <link rel="stylesheet" href="../CSS/style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .form {
+            width: 17%;
+            height: 400px;
+            margin: 100px auto;
+        }
+
+        /* .form h2 {
+            text-align: center;
+            margin: 5px auto;
+            color: rgb(172, 178, 208);
+        } */
+
+        h1 {
+            /* text-align: center; */
+            margin-bottom:30px;
+            color: rgb(172, 178, 208);
+            text-align: center;
+        }
+
+        .inp {
+            display: block;
+            margin: 10px auto;
+            border-radius: 20px;
+            border: none;
+            width: 100%;
+            height: 25px;
+            text-align: center;
+        }
+
+        .submit {
+            display: block;
+            margin: auto;
+            border-radius: 20px;
+            border: none;
+            width: 100%;
+            height: 25px;
+            background-color: grey;
+            /* rgba(44, 20, 20, 0.849); */
+            color: white;
+        }
+
+        .login-button {
+            display: block;
+            margin: auto;
+            margin-top: 10px;
+            border-radius: 20px;
+            border: none;
+            width: 100%;
+            height: 30px;
+            background-color: rgba(96, 91, 91, 0.748);
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .f_img {
+            width: 20px;
+        }
+
+        .centered-text {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+            color: white;
+            font-size: 18px;
+        }
+
+        .centered-text hr {
+            flex-grow: 1;
+            border: none;
+            border-top: 1px solid white;
+        }
+
+        @media only screen and (max-width: 1431px) {
+            .form {
+                width: 20%;
+            }
+        }
+        @media only screen and (max-width: 1150px) {
+            .form {
+                width: 20%;
+            }
+        }
+        @media only screen and (max-width: 967px) {
+            .form {
+                width: 40%;
+            }
+        }
+        @media only screen and (max-width: 540px) {
+            .form {
+                width: 70%;
+            }
+        }
+        @media only screen and (max-width: 490px) {
+            .form {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar-layout background">
+        <div class="nav-list-layout">
+            <div class="logoLayout"><img src="../images/img.PNG" alt="logo"></div>
+        </div>
+
+        <div class="rightNav">
+            <div class="logoLayoutRightNav"><img src="../images/img.PNG" alt="logo"></div>
+            <div class="profile">
+                <div class="profileImage"><img src="../images/defaultProfileImg.png" alt="profileImage"></div>
+                <div class="roleName">
+                    <p class="roleNameBig" id="installerName"></p>
+                    <p class="roleNameSmall">Installer</p>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="layoutNewUser">
+        <div class="layoutLeftNewUser background">
+                <div>
+                    <form id="registrationForm" class="form">
+                        <h1>New User Registration</h1>
+    
+                        <input type="text" name="firstName" placeholder="First Name" class="inp">
+                        <input type="text" name="lastName" placeholder="Last Name" class="inp">
+                        <input type="email" name="email" placeholder="Email Id" class="inp">
+                        <input type="number" name="phone" placeholder="Phone Number" class="inp">
+                        <input type="password" name="password" id="password" placeholder="Password" class="inp">
+                        <input type="password" name="confirm_password" id="confirm_password" placeholder="Confirm Password"
+                            class="inp">    
+                        <input type="submit" value="Add User" class="submit">
+    
+                        <div class="centered-text">
+                            <hr>
+                            <p>OR</p>
+                            <hr>
+                        </div>
+    
+                        <button type="button" class="login-button" onclick="handleFacebookLogin()">
+                            <img src="../images/facebook_icon.png" class="f_img" alt="Facebook Logo">
+                            Login with Facebook
+                        </button>
+    
+                        <button type="button" class="login-button" onclick="handleGoogleLogin()">
+                            <img src="../images/google_icon.png" class="f_img" alt="Google Logo">
+                            Login with Google
+                        </button>
+    
+                        <button type="button" class="login-button" onclick="handleTwitterLogin()">
+                            <img src="../images/twitter_icon.png" class="f_img" alt="Twitter Logo">
+                            Login with Twitter
+                        </button>
+    
+                    </form>
+                </div>
+        </div>
+        <div class="layoutRightNewUser">
+
+            <h1 class="text-big">User</h1>
+
+            <p class="text-small">Each customer in the system may have multiple User accounts. Each user is associated with their own
+                account, granting them access to a set of functionalities. Within this account, users can access and
+                interact with the devices that are associated with the customer. These devices encompass data
+                visualization and monitoring capabilities, allowing users to gain insights from the device data. </p>
+            <p class="text-small">Additionally, the account provides access to alarms generated by these devices, enabling users to
+                promptly respond to any potential issues or concerns arising from the devices' operation.</p>
+
+        </div>
+    </section>
+
+    <script type="module" src="../js/name.js"></script>
+    <script type="module" src="../js/addTenantUser.js"></script>
+</body>
+
+</html>
