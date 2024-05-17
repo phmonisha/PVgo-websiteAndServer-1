@@ -2367,7 +2367,7 @@ async function getsimulationstatus() {
     } else {
         simulationStatus = true; // Key "model" found with a valid value
     }
-};
+}
 
 async function generateSparklineLoading(elementID) {
     document.getElementById(elementID).classList.remove('sparklineimages');
