@@ -1,1585 +1,1414 @@
-const axios = require('axios');
-require('dotenv').config();
-const { Pool } = require('pg');
-const WebSocket = require('ws');
+const express = require("express");
+const app = express();
+const session = require('express-session');
+const NodeCache = require('node-cache');//const cache = new NodeCache();
+const cacheTenJwt = new NodeCache();
+const cacheSysAdminJwt = new NodeCache();
+const bcrypt = require('bcrypt');
+const fs = require("fs");
+const path = require("path");
+const axios = require('axios'); // Add this line to import axios
+const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const bodyParser = require('body-parser');
+const crypto = require('crypto');
+const { getJwtSysAdmin, getJwtTenant, getUserToken, getUserDeatils, getTenantEntityList, getCustomerEntityList, createCustomer, createCustomerUser, createTenant, getCustomerName, homeDetails, unassignDevice, getCustomer, editCustomer, deleteCustomer, editDeviceLable, getDeviceTelemetry, getDeviceSparklineTelemetry, getDeviceAtrributes, assignDevice, gethistoricData, scanIV, getTheUserjwtToken, saveCode, verifyEmail, checkIfCustomerExists, setVerifyFlagStatus, checkExists, saveCodePwdReset, resetPwd, updateAlarmStatus, getUniquePanelManufacturer, getCustomerList, getmodel, getpaneldata, getsimulationStatus } = require("./funcBE");
+const { saveNewPwd, autenticateUserPWD, saveNewPwdTenant, autenticateTenantUserPWD } = require("./pwdFunc");
+//const { emailUserConcern } = require("./email");
+const sendEmail = require("./sendEmail");
 
-const pool = new Pool({
-  host: "10.0.1.6",
-  user: "thingsboard",
-  port: 5432,
-  password: "thingsboard",
-  database: "thingsboard",
-  max: 2,
-  connectionTimeoutMillis: 0,
-  idleTimeoutMillis: 0
+
+const thingsboardHost = 'https://diverter.allsolus.com.au'; // ThingsBoard host URL
+//const thingsboardHost = 'https://demo.thingsboard.io'; // ThingsBoard host URL
+const port = 3061;
+
+app.listen(port, () => {
+    console.log(`Application started successfully in port ${port}`);
 });
 
-const thingsboardHost = process.env.thingsboardHost;
-const usernameAdmin = process.env.username;
-const passwordAdmin = process.env.password;
+app.set('view engine', 'ejs'); //to get parameter between web pages
 
-const usernameTenant = process.env.usernameTenant;
-const passwordTenant = process.env.passwordTenant;
+//EXPRESS SPECIFIC STUFFS
+app.use(express.static(path.join(__dirname, 'public')));
+app.use('/images', express.static('images'));
+app.use(
+    session({
+        secret: 'thisismysecretdonttellanyone!',
+        resave: false,
+        saveUninitialized: true,
+        cookie: {
+            sameSite: 'strict',
+            // Add any other cookie attributes as needed
+        },
+    })
+);
 
-const getJwtSysAdmin = async () => {
-  try {
 
-    const url = `${thingsboardHost}/api/auth/login`;
-    const headers = {
-      'Content-Type': 'application/json',
-    };
+//Used to bring in input form data to backend
+//app.use(express.urlencoded()); //use it if you are getting data directly from html form
+app.use(bodyParser.urlencoded({ extended: false })); // used as an alternative to app.use(express.urlencoded());
+app.use(express.json()); //use it if you are getting html form data using client side java script
+app.use(cors());
 
-    const sysAdminCred = {
-      "username": usernameAdmin,
-      "password": passwordAdmin
-    };
+const userData = {};
 
-    const response = await axios.post(url, sysAdminCred, { headers });
-    const tokenSysAdmin = response.data.token;
-    //console.log({ tokenSysAdmin });
-    return { "tokenSysAdmin": tokenSysAdmin, "boolean": true };
-  } catch (error) {
-    console.error('2) Error getting System Admin JWT Token:', error.message);
-    return { "tokenSysAdmin": null, "boolean": false };
-  }
+//let tenCred = '';
+//let userData[req.user.name].customerId = null;
+//let newCustomerId = null;
+//let newCustId = null;
+//let deviceId = null;
+//let newUserPassword = null;
+//let newUserId = null;
+//let newUserEmail = null;
+const salt = bcrypt.genSaltSync(10);
+//let userId = null;
+let tenId = null;
+let tenantCredsJSON = null;
+let newTenant = null;
+let newTenantId = null;
+
+
+function generateRandomCode() {
+    // Generate 2 random bytes (16 bits)
+    const buffer = crypto.randomBytes(2);
+
+    // Convert the random bytes to a 4-digit number
+    const code = buffer.readUInt16BE(0) % 10000;
+
+    // Ensure the code is exactly 4 digits by padding with zeros if necessary
+    return code.toString().padStart(4, '0');
 }
 
-const getJwtTenant = async () => {
-  try {
 
-    const url = `${thingsboardHost}/api/auth/login`;
-    const headers = {
-      'Content-Type': 'application/json',
-    };
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization']
+    const token = authHeader && authHeader.split(' ')[1]
+    //console.log('Token in auth function: ', token);
+    if (token == null) return res.sendStatus(401)
 
-    const tenantCred = {
-      "username": usernameTenant,
-      "password": passwordTenant
-    };
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+        //console.log(err)
+        if (err) return res.sendStatus(403)
+        req.user = user
+        next()
+    })
+};
 
-    const response = await axios.post(url, tenantCred, { headers });
-    const tokenTenant = response.data.token;
-    //console.log({ tokenTenant });
-    return { "tokenTenant": tokenTenant, "boolean": true };
-  } catch (error) {
-    console.error('2) Error getting Tenant JWT Token:', error.message);
-    return { "tokenTenant": null, "boolean": false };
-  }
+// Function to get JWT token and store it in the jwToken variable
+async function setJwtSysAdminToken() {
+    const cacheKey = "Admin";
+    jwtSysAdminToken = cacheSysAdminJwt.get(cacheKey);
+
+    // If not cached, fetch and cache the token
+    if (!jwtSysAdminToken) {
+        const tokenData = await getJwtSysAdmin();
+        if (tokenData && tokenData.tokenSysAdmin) {
+            jwtSysAdminToken = tokenData.tokenSysAdmin;
+
+            // Cache the token for a specific duration (e.g., 10 minutes)
+            cacheSysAdminJwt.set(cacheKey, jwtSysAdminToken, 60 * 15); // Cache for 10 minutes
+        }
+    }
 }
 
-// const getJwtTenant = async (tenantCredentials, tenantId) => {
-//   console.log({ tenantCredentials, tenantId });
-//   let response;
-//   try {
-//     //console.log('tenantCredentials_123 : ', tenantCredentials);
-//     //if (tenantId === undefined || tenantId === null) {
-//       if (tenantId === undefined) {
+async function setJwtTenantToken() {
+    const cacheKey = "Tenant";
+    jwtTenantToken = cacheSysAdminJwt.get(cacheKey);
 
-//       let url = `${thingsboardHost}/api/auth/login`;
-//       let headers = {
-//         'Content-Type': 'application/json',
-//       };
-//       response = await axios.post(url, tenantCredentials, { headers });
+    // If not cached, fetch and cache the token
+    if (!jwtTenantToken) {
+        const tokenData = await getJwtTenant();
+        if (tokenData && tokenData.tokenTenant) {
+            jwtTenantToken = tokenData.tokenTenant;
+
+            // Cache the token for a specific duration (e.g., 10 minutes)
+            cacheSysAdminJwt.set(cacheKey, jwtTenantToken, 60 * 15); // Cache for 10 minutes
+        }
+    }
+}
+
+// async function setJwtTenantToken(req) {
+//     try {
+
+//         const cacheKey = `${JSON.stringify(userData[req.user.name].tenCred)}:${userData[req.user.name].tenantUserId}`;
+
+//         // Try to get the cached token
+//         userData[req.user.name].jwtTenantToken1 = cacheTenJwt.get(cacheKey);
+//         jwtTenantToken = userData[req.user.name].jwtTenantToken1;
+
+//         // If not cached, fetch and cache the token 
+//         if (!jwtTenantToken) {
+//             const tenCred = userData[req.user.name].tenCred;
+//             let tenId = userData[req.user.name].tenantUserId;
+//             const tokenData = await getJwtTenant(tenCred, tenId);
+//             if (tokenData && tokenData.tokenTenant) {
+//                 userData[req.user.name].jwtTenantToken1 = tokenData.tokenTenant;
+//                 jwtTenantToken = userData[req.user.name].jwtTenantToken1;
+
+//                 console.log({ jwtTenantToken });
+
+//                 // Cache the token for a specific duration (e.g., 10 minutes)
+//                 cacheTenJwt.set(cacheKey, jwtTenantToken, 60 * 15); // Cache for 10 minutes
+//             }
+//         }
+//     } catch (error) {
+//         // Handle errors here, you can log or perform any necessary actions
+//         console.error("Error in setJwtTenantToken:", error);
 //     }
-//     else {
-
-//       const tokenData = await getJwtSysAdmin();
-//       console.log({ tokenData });
-//       // if (tokenData && tokenData.tokenSysAdmin) {
-//       //   let jwtSysAdminToken = tokenData.tokenSysAdmin;
-//       //   console.log({ jwtSysAdminToken });
-//       // }
-//       let jwtSysAdminToken = tokenData.tokenSysAdmin;
-
-//       let url = `${thingsboardHost}/api/user/${tenantId}/token`;
-//       let headers = {
-//         'Content-Type': 'application/json',
-//         'X-Authorization': `Bearer ${jwtSysAdminToken}`,
-//       };
-//       response = await axios.get(url, { headers });
-//     }
-
-//     const tokenTenant = response.data.token;
-//     // console.log({ tokenTenant });
-//     return { "tokenTenant": tokenTenant, "boolean": true };
-//   } catch (error) {
-//     console.error('2) Error getting Tenant JWT Token:', error.message);
-//     return { "tokenTenant": null, "boolean": false };
-//   }
 // }
 
 
-const getUserToken = async (credentials) => {
-  //console.log({ credentials });
-  try {
 
-    const url = `${thingsboardHost}/api/auth/login`;
-    const headers = {
-      'Content-Type': 'application/json',
-    };
+//END POINTS
+app.get('', function (req, res) {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
-    const response = await axios.post(url, credentials, { headers });
-    const tokenUser = response.data.token;
-    //console.log({ tokenUser });
-    return { "tokenUser": tokenUser, "boolean": true };
-  } catch (error) {
-    console.error('2) Error getting User JWT Token:', error.message);
-    return { "tokenUser": null, "boolean": false };
-  }
-}
+app.get('/Index', function (req, res) {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
-const getTheUserjwtToken = async (jwtTenantToken, customerId) => {
-  try {
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
-    };
+app.get('/Customer', function (req, res) {
+    res.sendFile(path.join(__dirname, 'public', '/LOGIN_SIGNIN_HTML/New Customer.html'));
+});
 
-    const sqlQuery17 = `SELECT array_agg(id) AS id FROM public.tb_user WHERE customer_id = '${customerId}'`;
-    const res = await pool.query(sqlQuery17);
+app.post('/New_Customer_Registration_A', async function (req, res) {
+    req.body.additionalInfo = {};
+    try {
+        await setJwtTenantToken();
 
-    //const userDataResponse = await axios.get(`${thingsboardHost}/api/customer/${customerId}/users?pageSize=1&page=1`, { headers });
-    //const userData = userDataResponse.data;
-    //const userId = userData.data[0].id.id;
-    const userId = res.rows[0].id[0];
-    const userToken = await axios.get(`${thingsboardHost}/api/user/${userId}/token`, { headers });
-    // console.log(userToken.data);
-    return userToken.data;
-  } catch (error) {
-    throw error;
-  };
-
-};
-
-const getUserDeatils = async (tokenUser) => {
-  try {
-
-    const url = `${thingsboardHost}/api/auth/user`;
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-Authorization': `Bearer ${tokenUser}`,
-    };
-
-    const response = await axios.get(url, { headers });
-    const userDetails = response.data;
-    //console.log({ userDetails });
-    return userDetails;
-  } catch (error) {
-    console.error('2) Error getting user details on login:', error.message);
-    return 0;
-  }
-}
-
-const createCustomer = async (customerData, jwtTenantToken, tenantId) => {
-  try {
-    let url = `${thingsboardHost}/api/customer`;
-
-    let headers = {
-      'Content-Type': 'application/json',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
-    };
-
-    console.log('customerData: ', customerData);
-
-    const response = await axios.post(url, customerData, { headers });
-    const newCustomerDataInfo = await response.data;
-    console.log('New customer created:', newCustomerDataInfo);
-
-    url = `${thingsboardHost}/api/plugins/telemetry/CUSTOMER/${newCustomerDataInfo.id.id}/attributes/SERVER_SCOPE`;
-
-    const attribute = {
-      "AccessLevel": "EndUser"
-    };
-
-    const attributeCreation = await axios.post(url, attribute, { headers });
-    console.log('attributeCreation.data: ', attributeCreation.data);
-
-    //////////
-
-
-    url = `${thingsboardHost}/api/relation`;
-
-    if (tenantId === null || tenantId === undefined) {
-      tenantId = "0f7189f0-631b-11ee-9c67-638bd1419106";
-      title = "MWP Default Installer";
+        tenantId = null;
+        const newCustomer = await createCustomer(req.body, jwtTenantToken, tenantId); // Call createCustomer function with the request body and token
+        newCustomerId = newCustomer.id.id;
+        res.json(newCustomer);
+    } catch (error) {
+        console.error('1) Error creating customer', error.response.data.message);
+        res.status(500).json({ error: error.response.data.message });
     }
-    else {
-      const sqlQuery6 = `select title from customer where id = '${tenantId}'`;
-      const res = await pool.query(sqlQuery6);
-      //console.log('res.rows: ', res.rows);
-      title = res.rows[0].title;
-    }
+});
 
-    const relations = {
-      "from": {
-        "id": newCustomerDataInfo.id.id,
+app.post('/New_Customer_Registration', authenticateToken, async function (req, res) {
+    req.body.additionalInfo = {};
+    try {
+        await setJwtTenantToken();
+
+        const newCustomer = await createCustomer(req.body, jwtTenantToken, userData[req.user.name].tenantId); // Call createCustomer function with the request body and token
+        userData[req.user.name].newCustomer = newCustomer;
+        userData[req.user.name].newCustomerId = newCustomer.id.id;
+        //console.log('userData[req.user.name].newCustomerId : ', userData[req.user.name].newCustomerId);
+        res.json(userData[req.user.name].newCustomer);
+    } catch (error) {
+        console.error('1) Error creating customer', error.response.data.message);
+        res.status(500).json({ error: error.response.data.message });
+    }
+});
+
+app.get('/addNewCustomerUser', function (req, res) {
+    res.sendFile(path.join(__dirname, 'public', '/LOGIN_SIGNIN_HTML/Add Customer User.html'));
+});
+
+app.get('/addNewTenantUser', function (req, res) {
+    res.sendFile(path.join(__dirname, 'public', '/LOGIN_SIGNIN_HTML/Add Tenant User.html'));
+});
+
+app.post('/addNewCustomerUser_A', async function (req, res) {
+
+    console.log(`req.body1: `, req.body);
+
+    req.body.additionalInfo = { "description": "Customer" };
+    req.body.authority = "CUSTOMER_USER";
+    const custDtl = {
+        "id": req.body.customerId,
         "entityType": "CUSTOMER"
-      },
-      "to": {
-        "id": tenantId,
+    }
+
+    req.body.customerId = custDtl;
+    //userData[req.user.name].newUserPassword = await bcrypt.hash(req.body.password, salt);
+    custUserPassword = req.body.password;
+    const customerId = req.body.customerId.id;
+
+    //console.log({ customerId });
+    delete req.body.password;
+    delete req.body.confirm_password;
+
+    console.log(`req.body2: `, req.body);
+
+    try {
+        await setJwtTenantToken();
+        //console.log({jwtTenantToken});
+        const newCustomerUser = await createCustomerUser(JSON.stringify(req.body), jwtTenantToken, custUserPassword); // Call createCustomer function with the request body and token
+        //console.log({ newCustomerUser })
+
+        customerUserJWTToken = await newCustomerUser.jwtUserToken;
+
+        //console.log({ customerUserJWTToken });
+
+        if (customerUserJWTToken) {
+            const username = req.body.email;
+            const user = { name: username };
+            const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: 86400 });
+            //console.log({ username, accessToken });
+
+            if (!userData[username]) {
+                // Initialize the userData[username] object if it doesn't exist
+                //console.log('Inside if (!userData[username])');
+                userData[username] = {};
+            }
+
+            userData[username].newCustomerId = customerId;
+            //console.log('userData[username].newCustomerId: ', userData[username].newCustomerId);
+            userData[username].customerUserJWTToken = customerUserJWTToken;
+            newCustomerUser.newCustomerUserDataInfo.success = true;
+            //console.log('newCustomerUser.newCustomerUserDataInfo: ', newCustomerUser.newCustomerUserDataInfo)
+            newCustomerUser.newCustomerUserDataInfo.accessToken = accessToken;
+            res.json(newCustomerUser.newCustomerUserDataInfo);
+        }
+    } catch (error) {
+        //console.error('1) Error creating customer', error.response.data.message);
+        console.error('1) Error creating customer', error.response.data.message);
+        res.status(500).json({ error: error.response.data.message }); // Send error response to the client
+    }
+});
+
+app.post('/addNewCustomerUser', authenticateToken, async function (req, res) {
+
+    if (userData[req.user.name].customerId === undefined) {
+        userData[req.user.name].newCustId = userData[req.user.name].newCustomerId;
+    }
+    else {
+        userData[req.user.name].newCustId = userData[req.user.name].customerId;
+    }
+
+    //console.log(`userData[req.user.name].newCustId: `,userData[req.user.name].newCustId);
+
+    req.body.additionalInfo = { "description": "Customer" };
+    req.body.authority = "CUSTOMER_USER";
+    const custDtl = {
+        "id": userData[req.user.name].newCustId,
         "entityType": "CUSTOMER"
-      },
-      "type": "Contains",
-      "typeGroup": "COMMON",
-      "additionalInfo": {
-        "installerGroup": title
-      }
-    };
+    }
 
-    const relationsCreation = await axios.post(url, relations, { headers });
+    req.body.customerId = custDtl;
+    //userData[req.user.name].newUserPassword = await bcrypt.hash(req.body.password, salt);
+    //console.log({ newUserPassword });
+    userData[req.user.name].custUserPassword = req.body.password;
+    delete req.body.password;
+    delete req.body.confirm_password;
 
-    //console.log('relationsCreation.data: ', relationsCreation.data);
+    //console.log(`req.body: `, req.body);
+    //console.log(`userData[req.user.name].custUserPassword: `, userData[req.user.name].custUserPassword);
 
-    /////////
+    try {
+        await setJwtTenantToken();
+        //console.log({jwtTenantToken});
+        const newCustomerUser = await createCustomerUser(JSON.stringify(req.body), jwtTenantToken, userData[req.user.name].custUserPassword); // Call createCustomer function with the request body and token
+        userData[req.user.name].customerUserJWTToken = await newCustomerUser.jwtUserToken.token;
+        newCustomerUser.newCustomerUserDataInfo.success = true;
+        res.json(newCustomerUser.newCustomerUserDataInfo);
+    } catch (error) {
+        //console.error('1) Error creating customer', error.response.data.message);
+        console.error('1) Error creating customer', error.response.data.message);
+        res.status(500).json({ error: error.response.data.message }); // Send error response to the client
+    }
+});
 
-    if (attributeCreation.data === '' && relationsCreation.data === '') {
+app.post('/addNewTenantUser_A', async function (req, res) {
 
-      return newCustomerDataInfo;
+    req.body.additionalInfo = { "description": "Installer" };
+    req.body.authority = "CUSTOMER_USER";
+    const tenDtl = {
+        "id": req.body.tenantId,
+        "entityType": "CUSTOMER"
+    }
+
+    req.body.customerId = tenDtl;
+    //userData[req.user.name].newUserPassword = await bcrypt.hash(req.body.password, salt);
+    const installerUserPassword = req.body.password;
+    const tenantId = req.body.tenantId;
+
+    //console.log({ tenantId });
+    delete req.body.password;
+    delete req.body.confirm_password;
+    delete req.body.tenantId;
+
+    //console.log(`req.body: `, req.body);
+    //console.log(`userData[req.user.name].installerUserPassword: `, userData[req.user.name].installerUserPassword);
+
+    try {
+        await setJwtTenantToken();
+        //console.log({jwtTenantToken});
+        const newInstallerUser = await createCustomerUser(JSON.stringify(req.body), jwtTenantToken, installerUserPassword); // Call createCustomer function with the request body and token
+        //console.log({ newInstallerUser })
+
+        customerUserJWTToken = await newInstallerUser.jwtUserToken;
+
+        //console.log({ customerUserJWTToken });
+
+        if (customerUserJWTToken) {
+            const username = req.body.email;
+            const user = { name: username };
+            const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: 86400 });
+            //console.log({ username, accessToken });
+
+            if (!userData[username]) {
+                // Initialize the userData[username] object if it doesn't exist
+                //console.log('Inside if (!userData[username])');
+                userData[username] = {};
+            }
+
+            userData[username].newTenantId = tenantId;
+            //console.log('userData[username].newTenantId: ', userData[username].newTenantId);
+            userData[username].customerUserJWTToken = customerUserJWTToken;
+            newInstallerUser.newCustomerUserDataInfo.success = true;
+            //console.log('newInstallerUser.newCustomerUserDataInfo: ', newInstallerUser.newCustomerUserDataInfo)
+            newInstallerUser.newCustomerUserDataInfo.accessToken = accessToken;
+            res.json(newInstallerUser.newCustomerUserDataInfo);
+        }
+    } catch (error) {
+        console.error('1) Error creating installer user: ', error.response.data.message);
+        res.status(500).json({ error: error.response.data.message }); // Send error response to the client
+    }
+});
+
+app.post('/addNewTenantUser', authenticateToken, async function (req, res) {
+    if (userData[req.user.name].tenantId === undefined) {
+        userData[req.user.name].newTenId = userData[req.user.name].newTenantId;
     }
     else {
-
-      url = `${thingsboardHost}/api/customer/${newCustomerDataInfo.id.id}`;
-
-      headers = {
-        'accept': '*/*',
-        'X-Authorization': `Bearer ${jwtTenantToken}`,
-      };
-
-      const deleteCustomer = await axios.delete(url, { headers });
-
-      throw new Error("Due to technical issues Installer account couldn't be created. Please try again.");
-
+        userData[req.user.name].newTenId = userData[req.user.name].tenantId;
     }
 
-  } catch (error) {
-    throw error;
-  }
-};
-
-const createCustomerUser = async (userData, jwtTenantToken, userPwd) => {
-  //console.log({ userData });
-  let headers = null;
-  try {
-    const url = `${thingsboardHost}/api/user?sendActivationMail=false`;
-
-    headers = {
-      'Content-Type': 'application/json',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
-    };
-
-    //console.log({ url, headers, userData });
-    const response = await axios.post(url, userData, { headers });
-    const newCustomerUserDataInfo = await response.data;
-    //console.log('New customer user created:', newCustomerUserDataInfo);
-    const userId = await response.data.id.id;
-
-    //console.log('userId:', userId);
-
-    headers = {
-      'accept': 'text/plain',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
-    };
-
-    const activationURL = await axios.get(`${thingsboardHost}/api/user/${userId}/activationLink`, { headers });
-    //console.log('activationURL:', activationURL.data);
-    const urlObj = new URL(activationURL.data);
-    const activateToken = urlObj.searchParams.get('activateToken');
-    //console.log(activateToken);
-
-    const body = {
-      "activateToken": activateToken,
-      "password": userPwd
+    req.body.additionalInfo = { "description": "Installer" };
+    req.body.authority = "CUSTOMER_USER";
+    const tenDtl = {
+        "id": userData[req.user.name].newTenId,
+        "entityType": "CUSTOMER"
     }
 
-    headers = {
-      'Content-Type': 'application/json',
-    };
+    req.body.customerId = tenDtl;
+    //userData[req.user.name].newUserPassword = await bcrypt.hash(req.body.password, salt);
+    //console.log({ newUserPassword });
+    userData[req.user.name].installerUserPassword = req.body.password;
+    delete req.body.password;
+    delete req.body.confirm_password;
 
+    //console.log(`req.body: `, req.body);
+    //console.log(`userData[req.user.name].installerUserPassword: `, userData[req.user.name].installerUserPassword);
 
-    const jwtUserToken = await axios.post(`${thingsboardHost}/api/noauth/activate?sendActivationMail=false`, body, { headers });
-    //console.log(`jwtUserToken.data.token: `, jwtUserToken.data.token);
-    return { "newCustomerUserDataInfo": newCustomerUserDataInfo, "jwtUserToken": jwtUserToken.data.token };
-    //return {newCustomerUserDataInfo};
-
-  } catch (error) {
-    console.error('2)Error creating customer User:', error.response.data.message);
-    throw error;
-  }
-};
-
-
-const resetPwd = async (email, jwtTenantToken) => {
-  try {
-
-    const sqlQuery21 = `SELECT id FROM public.tb_user where email = '${email}'`;
-
-    const res = await pool.query(sqlQuery21);
-
-    if (res.rows.length === 0) {
-      throw new Error('User not found in the database.');
+    try {
+        await setJwtTenantToken();
+        //console.log({jwtTenantToken});
+        const newInstallerUser = await createCustomerUser(JSON.stringify(req.body), jwtTenantToken, userData[req.user.name].installerUserPassword); // Call createCustomer function with the request body and token
+        userData[req.user.name].customerUserJWTToken = await newInstallerUser.jwtUserToken.token;
+        newInstallerUser.newCustomerUserDataInfo.success = true;
+        res.json(newInstallerUser.newCustomerUserDataInfo);
+    } catch (error) {
+        //console.error('1) Error creating customer', error.response.data.message);
+        console.error('1) Error creating installer user: ', error.response.data.message);
+        res.status(500).json({ error: error.response.data.message }); // Send error response to the client
     }
-
-    const userId = res.rows[0].id;
-
-    const headers = {
-      'accept': 'application/json',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
-    };
-
-    const userDetails = await axios.get(`${thingsboardHost}/api/user/${userId}`, { headers });
-
-    //console.log('userDetails.data: ', userDetails.data);
-
-    delete userDetails.data.additionalInfo;
-    delete userDetails.data.createdTime;
-    delete userDetails.data.id;
-
-    userDetails.data.additionalInfo = {
-      description: 'Customer'
-    }
-
-    //console.log('userDetails.data: ', userDetails.data);
-
-    if (!userDetails.data.customerId.id) {
-      throw new error('Could not get user data.');
-    }
-    else {
-
-      //console.log('userId: ',userId);
-      //console.log('jwtTenantToken: ',jwtTenantToken);
-
-      const headers1 = {
-        'accept': '*/*',
-        'X-Authorization': `Bearer ${jwtTenantToken}`,
-      };
-
-      const deleteStatus = await axios.delete(`${thingsboardHost}/api/user/${userId}`, { headers: headers1 });
-      //console.log('deleteStatus: ', deleteStatus.data);
-
-      return userDetails.data;
-
-    }
-
-  }
-  catch (error) {
-    console.error('Error:', error.message);
-    throw error.message;
-  }
-};
-
-const createTenant = async (tenantData, jwtTenantToken) => {
-  try {
-    let url = `${thingsboardHost}/api/customer`;
-
-    console.log({ jwtTenantToken });
-    console.log({ tenantData });
-
-    let headers = {
-      'Content-Type': 'application/json',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
-    };
-
-    const response = await axios.post(url, tenantData, { headers });
-    console.log('New tenant ID response:', response);
-    const newTenantDataInfo = await response.data;
-    //console.log('New tenant ID:', newTenantDataInfo.id.id);
-
-    url = `${thingsboardHost}/api/plugins/telemetry/CUSTOMER/${newTenantDataInfo.id.id}/attributes/SERVER_SCOPE`;
-
-    const attribute = {
-      "AccessLevel": "Installer"
-    };
-
-    const attributeCreation = await axios.post(url, attribute, { headers });
-
-    console.log('attributeCreation.data: ', attributeCreation.data);
-
-    if (attributeCreation.data === '') {
-      return newTenantDataInfo;
-    }
-
-    else {
-
-      url = `${thingsboardHost}/api/customer/${newTenantDataInfo.id.id}`;
-
-      headers = {
-        'accept': '*/*',
-        'X-Authorization': `Bearer ${jwtTenantToken}`,
-      };
-
-      const deleteTenant = await axios.delete(url, { headers });
-
-      throw new Error("Due to technical issues Installer account couldn't be created. Please try again.");
-    }
-
-  } catch (error) {
-    //console.log('error: ',error.response.data);
-    //console.error('2)Error creating tenant:', error.response.data);
-    throw error;
-  }
-};
-
-const getTenantEntityList = async (pageIdentifier, jwtTenantToken, installerCustomerId) => {
-  try {
-
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
-    };
-
-    let modifiedResponse;
-    let thingsboardResponse = null;
-    const sqlQuery1 = `SELECT c2.created_time createdtime, c2.title, c2.email, c2.country, c2.city, c2.id customerid FROM relation r, customer c1, customer c2 WHERE r.from_type = 'CUSTOMER' AND r.from_id = c2.id AND ( r.additional_info :: json ) ->> 'installerGroup' = c1.title AND c1.id = '${installerCustomerId}' order by 1 desc`;
-    const sqlQuery2 = `select a.created_time createdtime, a.originator_id originatorid, a.type, a.severity, a.assignee_id assigneeid, a.cleared||'_'||a.acknowledged status from alarm a where a.customer_id in (SELECT r.from_id FROM relation r, customer c1 WHERE r.from_type = 'CUSTOMER' AND ( r.additional_info :: json ) ->> 'installerGroup' = c1.title AND c1.id = '${installerCustomerId}') order by 1 desc`;
-    const sqlQuery3 = `select d.created_time createdtime, d.name, (select name from device_profile where id = d.device_profile_id) deviceprofile, d.label, (select title from customer where id = d.customer_id) customer, d.id deviceid, d.customer_id customerId from device d where d.type = 'curvy' AND d.customer_id in (SELECT r.from_id FROM relation r, customer c1 WHERE r.from_type = 'CUSTOMER' AND ( r.additional_info :: json ) ->> 'installerGroup' = c1.title AND c1.id = '${installerCustomerId}') order by 1 desc`;
-    const sqlQuery4 = `select a.created_time createdtime, a.name, (select name from asset_profile where id = a.asset_profile_id) assetprofile, a.label, (select title from customer where id = a.customer_id) customer from asset a where a.customer_id in (SELECT r.from_id FROM relation r, customer c1 WHERE r.from_type = 'CUSTOMER' AND ( r.additional_info :: json ) ->> 'installerGroup' = c1.title AND c1.id = '${installerCustomerId}') order by 1 desc`;
-
-    //Make a GET API call to ThingsBoard API
-    if (pageIdentifier === 'tenantCustomer') {
-
-      try {
-        const res = await pool.query(sqlQuery1);
-        thingsboardResponse = res.rows;
-
-        modifiedResponse = {
-          data: thingsboardResponse,
-          hasNext: false,
-        };
-        //console.log('modifiedResponse1:  ',modifiedResponse);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-    else if (pageIdentifier === 'tenantAlarm') {
-      try {
-        const res = await pool.query(sqlQuery2);
-        thingsboardResponse = res.rows;
-
-        modifiedResponse = {
-          data: thingsboardResponse,
-          hasNext: false,
-        };
-        //console.log('modifiedResponse1:  ',modifiedResponse);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-    else if (pageIdentifier === 'tenantDevice') {
-      try {
-        const res = await pool.query(sqlQuery3);
-        thingsboardResponse = res.rows;
-
-        // console.log('thingsboardResponse: ', thingsboardResponse);
-
-        modifiedResponse = {
-          data: thingsboardResponse,
-          hasNext: false,
-        };
-        //console.log('modifiedResponse1:  ',modifiedResponse);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-    else if (pageIdentifier === 'tenantAsset') {
-      try {
-        const res = await pool.query(sqlQuery4);
-        thingsboardResponse = res.rows;
-
-        modifiedResponse = {
-          data: thingsboardResponse,
-          hasNext: false,
-        };
-        //console.log('modifiedResponse1:  ',modifiedResponse);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-    //console.log('modifiedResponse2:  ',modifiedResponse);
-    //client.end();
-    return modifiedResponse;
-  } catch (error) {
-    console.error('2) Error creating tenant list:', error.message);
-    return 0;
-  }
-}
-
-/////////////////////
-
-const getCustomerEntityList = async (pageIdentifier, jwtTenantToken, customerId) => {
-  try {
-
-    //console.log({ pageIdentifier, jwtTenantToken, customerId });
-
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
-    };
-
-    let modifiedResponse;
-
-    //Make a GET API call to ThingsBoard API
-    if (pageIdentifier === 'customerAlarm') {
-      //console.log(pageIdentifier);
-      intermediateResponse = await axios.get(`${thingsboardHost}/api/alarm/CUSTOMER/${customerId}?pageSize=1&page=0`, { headers });
-      if (intermediateResponse.data.totalElements !== 0) {
-        itemsPerPage = intermediateResponse.data.totalElements;
-      } else {
-        itemsPerPage = 1;
-      };
-
-      thingsboardResponse = await axios.get(`${thingsboardHost}/api/alarm/CUSTOMER/${customerId}?pageSize=1&page=0`, { headers });
-
-      modifiedResponse = {
-        data: await Promise.all(thingsboardResponse.data.data.map(async item => {
-
-          let originator = null;
-          originator = await getDeviceName(item.originator.id, jwtTenantToken);
-
-
-          let assigneeName = null;
-
-          if (item.assignee === null) {
-            assigneeName = null;
-          } else {
-            assigneeName = item.assignee ? (item.assignee.firstName + ' ' + item.assignee.lastName) : '';
-          }
-
-          return {
-            createdTime: item.createdTime,
-            originator: originator,
-            type: item.type,
-            severity: item.severity,
-            assignee: assigneeName,
-            status: item.status,
-          };
-        })),
-        hasNext: thingsboardResponse.data.hasNext,
-      };
-    }
-    else if (pageIdentifier === 'customerDevice') {
-
-      //console.log('customerId inside customerEntityList customerDevice: ', customerId);
-
-      intermediateResponse = await axios.get(`${thingsboardHost}/api/customer/${customerId}/devices?pageSize=1&page=0`, { headers });
-      if (intermediateResponse.data.totalElements !== 0) {
-        itemsPerPage = intermediateResponse.data.totalElements;
-      } else {
-        itemsPerPage = 1;
-      };
-      thingsboardResponse = await axios.get(`${thingsboardHost}/api/customer/${customerId}/deviceInfos?pageSize=${itemsPerPage}&page=0`, { headers });
-
-      //console.log('thingsboardResponse.data.data: ', thingsboardResponse.data.data);
-
-      modifiedResponse = {
-        data: (await Promise.all(thingsboardResponse.data.data.map(async item => {
-          let customer = null;
-          const deviceProfile = 'curvy';
-
-          if (item.customerId && item.customerId.id !== '13814000-1dd2-11b2-8080-808080808080') {
-            customer = await getCustomerName(item.customerId.id, jwtTenantToken);
-          }
-
-          //console.log('item.deviceProfileId.id: ',item.deviceProfileId.id);
-
-          return {
-            createdTime: item.createdTime,
-            name: item.name,
-            deviceProfile: deviceProfile,
-            deviceProfileId: item.deviceProfileId.id,
-            label: item.label,
-            deviceId: item.id.id,
-            status: item.active,
-          };
-        }))).filter(item => item.deviceProfileId === 'ac773360-10a7-11ee-8cb3-398c6452fe3e'), // Filter data by deviceProfile
-        hasNext: thingsboardResponse.data.hasNext,
-      };
-    }
-    else if (pageIdentifier === 'customerAsset') {
-      intermediateResponse = await axios.get(`${thingsboardHost}/api/customer/${customerId}/assets?pageSize=1&page=0`, { headers });
-      if (intermediateResponse.data.totalElements !== 0) {
-        itemsPerPage = intermediateResponse.data.totalElements;
-      } else {
-        itemsPerPage = 1;
-      };
-      thingsboardResponse = await axios.get(`${thingsboardHost}/api/customer/${customerId}/assets?pageSize=${itemsPerPage}&page=0`, { headers });
-
-      modifiedResponse = {
-        data: await Promise.all(thingsboardResponse.data.data.map(async item => {
-
-          let assetProfile = null;
-          assetProfile = await getAssetProfileName(item.assetProfileId.id, jwtTenantToken);
-
-          return {
-            createdTime: item.createdTime,
-            name: item.name,
-            assetProfile: assetProfile,
-            label: item.label,
-          };
-        })),
-        hasNext: thingsboardResponse.data.hasNext,
-      };
-    }
-    else if (pageIdentifier === 'customerDashboard' || pageIdentifier === 'tenantDashboard') {
-      intermediateResponse = await axios.get(`${thingsboardHost}/api/customer/${customerId}/devices?pageSize=1&page=0`, { headers });
-      if (intermediateResponse.data.totalElements !== 0) {
-        itemsPerPage = intermediateResponse.data.totalElements;
-      } else {
-        itemsPerPage = 1;
-      };
-      thingsboardResponse = await axios.get(`${thingsboardHost}/api/customer/${customerId}/devices?pageSize=${itemsPerPage}&page=0`, { headers });
-
-      modifiedResponse = {
-        data: (await Promise.all(thingsboardResponse.data.data.map(async item => {
-          let customer = null;
-          const deviceProfile = 'curvy';
-
-          if (item.customerId && item.customerId.id !== '13814000-1dd2-11b2-8080-808080808080') {
-            customer = await getCustomerName(item.customerId.id, jwtTenantToken);
-          }
-
-          //console.log('item.deviceProfileId.id: ',item.deviceProfileId.id);
-
-          return {
-            createdTime: item.createdTime,
-            name: item.name,
-            deviceProfile: deviceProfile,
-            deviceProfileId: item.deviceProfileId.id,
-            label: item.label,
-            deviceId: item.id.id,
-          };
-        }))).filter(item => item.deviceProfileId === 'ac773360-10a7-11ee-8cb3-398c6452fe3e'), // Filter data by deviceProfile
-        hasNext: thingsboardResponse.data.hasNext,
-      };
-    }
-    //console.log({ modifiedResponse });
-    return modifiedResponse;
-  } catch (error) {
-    console.error('2) Error creating customer list:', error.message);
-    return 0;
-  }
-}
-
-
-//////////////////////
-
-const getCustomerName = async (customerID, jwtTenantToken) => {
-  try {
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
-    };
-
-    const customerName = await axios.get(`${thingsboardHost}/api/customer/${customerID}`, { headers });
-    return customerName.data.name;
-  } catch (error) {
-    console.error('2)Error creating customer:', error.message);
-  }
-};
-
-const getDeviceName = async (deviceId, jwtTenantToken) => {
-  try {
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
-    };
-
-    const deviceName = await axios.get(`${thingsboardHost}/api/device/${deviceId}`, { headers });
-    return deviceName.data.name;
-  } catch (error) {
-    console.error('2)Error creating customer:', error.message);
-  }
-};
-
-const getAssetProfileName = async (assetProfileId, jwtTenantToken) => {
-  try {
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
-    };
-
-    const assetProfileName = await axios.get(`${thingsboardHost}/api/assetProfileInfo/${assetProfileId}`, { headers });
-    return assetProfileName.data.name;
-  } catch (error) {
-    console.error('2)Error creating customer:', error.message);
-  }
-};
-
-const getDeviceProfileName = async (deviceProfileId, jwtTenantToken) => {
-  try {
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
-    };
-
-    const deviceProfileName = await axios.get(`${thingsboardHost}/api/deviceProfileInfo/${deviceProfileId}`, { headers });
-    return deviceProfileName.data.name;
-  } catch (error) {
-    console.error('2)Error creating customer:', error.message);
-  }
-};
-
-const homeDetails = async (id, jwtTenantToken, pageIdentifier) => {
-  try {
-    const headers = {
-      'accept': 'application/json',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
-    };
-
-    const details = await axios.get(`${thingsboardHost}/api/customer/${id}`, { headers });
-    //console.log(profileDetails.data);
-    const data = details.data;
-
-    let res = null;
-    if (pageIdentifier === 'tenantHome') {
-      const sqlQuery8 = `WITH mm AS (SELECT r.from_id FROM relation r, customer c1 WHERE r.from_type = 'CUSTOMER' AND (r.additional_info::json) ->> 'installerGroup' = c1.title AND c1.id = '${id}'), customer AS (SELECT count(*) customer FROM customer,mm WHERE id = mm.from_id), device AS (SELECT count(*) device FROM ( SELECT device_profile_id FROM device,mm WHERE device_profile_id = 'ac773360-10a7-11ee-8cb3-398c6452fe3e' AND customer_id = mm.from_id) d), alarm AS (select count(*) alarm from alarm, mm where customer_id = mm.from_id), asset AS (select count(*) asset from asset, mm where customer_id = mm.from_id) select * from customer,device, alarm, asset`;
-      res = await pool.query(sqlQuery8);
-    }
-    else if (pageIdentifier === 'customerHome') {
-      const sqlQuery9 = `WITH mm AS (SELECT id from customer where id = '${id}'), device AS (SELECT count(*) device FROM ( SELECT device_profile_id FROM device,mm WHERE device_profile_id = 'ac773360-10a7-11ee-8cb3-398c6452fe3e' AND customer_id = mm.id) d), alarm AS (select count(*) alarm from alarm, mm where customer_id = mm.id), asset AS (select count(*) asset from asset, mm where customer_id = mm.id) select * from device, alarm, asset`;
-      res = await pool.query(sqlQuery9);
-    }
-
-    const entityCount = res.rows;
-
-    const sqlQuery9 = `select (first_name||' '||last_name) as name, email from tb_user where authority = 'CUSTOMER_USER' and customer_id = '${id}'`;
-
-    res = await pool.query(sqlQuery9);
-
-    const users = res.rows;
-
-    //console.log({ users });
-
-
-
-    return { data, entityCount, users };
-  } catch (error) {
-    console.error('2)Error getting home page details:', error.message);
-  }
-};
-
-const unassignDevice = async (deviceId, jwtTenantToken) => {
-  try {
-
-    const sqlQuery23 = `UPDATE public.device SET label = null WHERE id = '${deviceId}'`;
-
-    const headers = {
-      'accept': 'application/json',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
-    };
-
-    const deviceDetails = await axios.delete(`${thingsboardHost}/api/customer/device/${deviceId}`, { headers });
-    console.log('deviceDetails.data.label: ', deviceDetails.data.label);
-
-    if (deviceDetails.data.label !== '') {
-      const res = await pool.query(sqlQuery23);
-      console.log('Row count:', res.rowCount);
-    }
-    return deviceDetails.data;
-  } catch (error) {
-    console.error('2)Error creating customer:', error.message);
-  }
-};
-
-const getCustomer = async (customerId, jwtTenantTokecustomerIdn) => {
-  try {
-    const headers = {
-      'accept': 'application/json',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
-    };
-
-    const customerDetails = await axios.get(`${thingsboardHost}/api/customer/${customerId}`, { headers });
-    //console.log('customerDetails.data: ', customerDetails.data);
-    return customerDetails.data;
-  } catch (error) {
-    console.error('2)Error populating customer details before modification:', error.message);
-  }
-};
-
-const editCustomer = async (customerData, jwtTenantToken) => {
-  try {
-    let url = `${thingsboardHost}/api/customer`;
-
-    let headers = {
-      'Content-Type': 'application/json',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
-    };
-
-    const response = await axios.post(url, customerData, { headers });
-    const customerDataInfo = await response.data;
-    //console.log('Customer modified data:', customerDataInfo);
-
-    return customerDataInfo;
-
-  } catch (error) {
-    console.error('2)Error modifying customer:', error.message);
-  }
-};
-
-const deleteCustomer = async (customerId, jwtTenantToken) => {
-  try {
-    const headers = {
-      'accept': '*/*',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
-    };
-
-    const customerDetails = await axios.delete(`${thingsboardHost}/api/customer/${customerId}`, { headers });
-    //console.log('customerDetails.data: ', customerDetails.data);
-    return customerDetails.data;
-  } catch (error) {
-    console.error('2)Error creating customer:', error.message);
-  }
-};
-
-const editDeviceLable = async (deviceId, label) => {
-  try {
-    const sqlQuery = `UPDATE device SET label = $1 WHERE id = $2`;
-
-    const result = await pool.query(sqlQuery, [label, deviceId]);
-
-    const rowsUpdated = result.rowCount;
-    //console.log(`Number of rows updated: ${rowsUpdated}`);
-
-    const success = rowsUpdated > 0;
-    //console.log({ success });
-    return { success };
-  } catch (error) {
-    console.error('Error updating device label:', error.message);
-    throw error; // Rethrow the error to be caught by the caller
-  }
-};
-
-
-const getDeviceTelemetry = (pageIdentifier, jwtTenantToken, deviceId) => {
-
-  //console.log({ deviceId });
-  return new Promise((resolve, reject) => {
-    const webSocket = new WebSocket("wss://diverter.allsolus.com.au/api/ws/plugins/telemetry?token=" + jwtTenantToken);
-
-    webSocket.onopen = function () {
-      const object = {
-        tsSubCmds: [
-          {
-            entityType: "DEVICE",
-            entityId: deviceId,
-            scope: "LATEST_TELEMETRY",
-            cmdId: 10
-          }
-        ],
-        historyCmds: [],
-        attrSubCmds: []
-      };
-      const data = JSON.stringify(object);
-      webSocket.send(data);
-    };
-
-    webSocket.onmessage = function (event) {
-      const originalData = JSON.parse(event.data); // Parse the received JSON data
-      const formattedData = {};
-
-      for (const key in originalData.data) {
-        formattedData[key] = [
-          {
-            "ts": originalData.data[key][0][0], // Extract the timestamp
-            "value": originalData.data[key][0][1] // Extract the value
-          }
-        ];
-      }
-
-      //console.log({ formattedData });
-
-      // Resolve the Promise with the telemetry data
-      resolve(formattedData);
-
-    };
-
-    webSocket.onclose = function (event) {
-      reject("Connection is closed!"); // Reject the Promise in case of an error
-    };
-  });
-};
-
-const getDeviceSparklineTelemetry = async (pageIdentifier, jwtTenantToken, deviceId) => {
-  try {
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
-    };
-    const seconds = Math.floor(Date.now() / 1000);
-    const endTs = seconds * 1000;
-    const startTs = endTs - 28800000;
-    const deviceTelemetry = await axios.get(`${thingsboardHost}/api/plugins/telemetry/DEVICE/${deviceId}/values/timeseries?keys=i,v,voc,currents,simIrradiance,simTemperature,performanceFactor&startTs=${startTs}&endTs=${endTs}`, { headers });
-    let voc = deviceTelemetry.data['voc'];
-
-    let totaldatapoints = 250;
-    let extractedVotlagePoints = voc.map(voc => {
-      const dividedValue = voc.value / (totaldatapoints - 1); // Divide the value by totaldatapoints - 1
-
-      const voltages = Array(totaldatapoints).fill(0).map((_, index) => {
-        if (index === totaldatapoints - 1) {
-          return Math.round(voc.value * 100) / 100; // Last data point retains the original value
+});
+
+app.get('/Tenant', function (req, res) {
+    res.sendFile(path.join(__dirname, 'public', '/LOGIN_SIGNIN_HTML/New Tenant.html'));
+});
+
+app.post('/New_Tenant_Registration', async function (req, res) {
+    //req.body.additionalInfo = {};
+    try {
+        await setJwtTenantToken();
+        const newTenant = await createTenant(req.body, jwtTenantToken); // Call createCustomer function with the request body and token
+        console.log('newTenant: ', newTenant);
+        if (newTenant !== undefined) {
+            newTenantId = newTenant.id.id;
+            res.json(newTenant);
         }
-        return Math.round((index * dividedValue) * 100) / 100; // Increment each data point by divided value
-      });
-
-      const valueString = '[' + voltages.join(', ') + ']'; // Convert the array to string format
-
-      return {
-        ts: voc.ts,
-        value: valueString
-      };
-    });
-
-    const currentPoints = deviceTelemetry.data['currents'].map(item => {
-      const parsedValue = JSON.parse(item.value); // Parse the value string into an array
-      const dividedValues = parsedValue.map(val => val / 1000); // Divide each value by 1000
-      const stringValue = JSON.stringify(dividedValues); // Convert the array back to string
-      return {
-        ts: item.ts,
-        value: stringValue
-      };
-    });
-
-    // Function to multiply corresponding values
-    const multiplyPoints = (point1, point2) => {
-      const parsedValue1 = JSON.parse(point1.value); // Parse the value string into an array
-      const parsedValue2 = JSON.parse(point2.value); // Parse the value string into an array
-
-      const multipliedValues = parsedValue1.map((val, index) => Math.round(val * parsedValue2[index])); // Multiply corresponding values andround the result
-
-      const stringValue = JSON.stringify(multipliedValues); // Convert the array back to a string
-      return {
-        ts: point1.ts, // Assuming timestamps are same for both points
-        value: stringValue
-      };
+        //console.log('userData[req.user.name].newTenantId : ', userData[req.user.name].newTenantId);
+    } catch (error) {
+        //console.log('1) Error creating tenant:', error.message);
+        //console.error('1) Error creating tenant:', error.message);
+        console.error('1) Error creating tenant:', error.response.data.message);
+        res.status(500).json({ error: error.response.data.message });
     };
+});
 
-    // Multiply the points
-    const powerPoints = extractedVotlagePoints.map((voltagePoint, index) => multiplyPoints(voltagePoint, currentPoints[index]));
+// app.get('/Existing_Customer', function (req, res) {
+//     res.sendFile(path.join(__dirname, 'public', '/LOGIN_SIGNIN_HTML/Existing Customer.html'));
+// });
 
-    let pmp = [];
-    let index = [];
-    powerPoints.forEach(item => {
-      // Remove square brackets and parse the value string into an array of integers
-      let values = item.value.substring(1, item.value.length - 1).split(',').map(Number);
+// app.post('/Existing_User_Login', async function (req, res) {
+//     const userCredsJSON = req.body;
+//     console.log('Customer User Credentials', userCredsJSON);
+//     try {
+//         const authResult = await autenticateUserPWD(userCredsJSON);
+//         userData[req.user.name].userId = await authResult.userId;
+//         userData[req.user.name].customerId = await authResult.customerId;
+//         userData[req.user.name].tenantUserId = await authResult.tenantUserId;
+//         console.log('userData[req.user.name].customerId :', userData[req.user.name].customerId);
+//         const isMatch = await authResult.result;
 
-      // Find the maximum value and its index
-      let maxVal = Math.max(...values);
-      let maxIdx = values.indexOf(maxVal);
+//         //console.log({ customerId, userId, isMatch });
+//         res.json({ "success": isMatch });
 
-      // Create objects with timestamp and maximum value/index
-      let pmpObj = {
-        ts: item.ts,
-        value: maxVal
-      };
-
-      let indexObj = {
-        ts: item.ts,
-        value: maxIdx
-      };
-
-      // Save the objects
-      pmp.push(pmpObj);
-      index.push(indexObj);
-    });
-
-    let vmp = [];
-    let imp = [];
-
-    index.forEach(idx => {
-      let extractedIndex = idx.value;
-      let currentIdx = currentPoints.findIndex(item => item.ts === idx.ts);
-      let extractedIdx = extractedVotlagePoints.findIndex(item => item.ts === idx.ts);
-
-      if (currentIdx !== -1 && extractedIdx !== -1) {
-        vmp.push({ ts: idx.ts, value: JSON.parse(extractedVotlagePoints[extractedIdx].value)[extractedIndex] });
-        imp.push({ ts: idx.ts, value: JSON.parse(currentPoints[currentIdx].value)[extractedIndex] });
-      }
-    });
-
-    let isc = [];
-    isc = deviceTelemetry.data.currents.map(data => {
-      const parsedValue = JSON.parse(data.value);
-      const lastValue = parsedValue[0] / 1000;
-
-      return {
-        'ts': data.ts,
-        'value': lastValue.toFixed(2)
-      };
-    });
-
-    const ff = pmp.map((pmpItem, index) => {
-      const iscValue = parseFloat(isc[index].value);
-      const vocValue = parseFloat(voc[index].value);
-      const pmpValue = pmpItem.value;
-
-      // Check if ISC and VOC are non-zero before calculating FF
-      if (iscValue !== 0 && vocValue !== 0) {
-        const fillFactor = (pmpValue / (iscValue * vocValue)).toFixed(2); // Round FF to 2 decimal places
-        return { ts: pmpItem.ts, value: parseFloat(fillFactor) };
-      } else {
-        return { ts: pmpItem.ts, value: 0 }; // Set FF to 0 if ISC or VOC is zero to avoid division by zero error
-      }
-    });
-
-    let pop = [];
-    let iop = [];
-    let vop = [];
-    iop = deviceTelemetry.data.i;
-    vop = deviceTelemetry.data.v;
-    pop = iop.map((iopItem, index) => {
-      const iopValue = parseFloat(iopItem.value);
-      const vopValue = parseFloat(vop[index].value);
-
-      // Multiply values and round to 0 decimal places
-      const popValue = Math.round(iopValue * vopValue);
-
-      return { ts: iopItem.ts, value: popValue };
-    });
-
-    deviceTelemetry.data.isc = isc;
-    deviceTelemetry.data.pmp = pmp;
-    deviceTelemetry.data.vmp = vmp;
-    deviceTelemetry.data.imp = imp;
-    deviceTelemetry.data.ff = ff;
-    deviceTelemetry.data.pop = pop;
-
-    return deviceTelemetry.data;
-  } catch (error) {
-    console.error('3)Errorgetting data:', error.message);
-  }
-};
-
-const getDeviceAtrributes = async (pageIdentifier, jwtTenantToken, deviceId, voc, isc) => {
-  //console.log({ deviceId, voc, isc });
-  try {
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
-    };
-
-    // console.log({ deviceId });
-
-    // const sqlQuery19 = `SELECT CASE WHEN att.str_v = 'custom' THEN (SELECT json_v FROM attribute_kv WHERE entity_id = att.entity_id AND attribute_key = 'custom') ELSE (SELECT ROW_TO_JSON(pannel_info) FROM public.pannel_info WHERE panel_model = att.str_v) END AS model_value FROM attribute_kv att WHERE att.entity_id = '${deviceId}' AND att.attribute_key = 'model'`;
-
-    //   const res = await pool.query(sqlQuery19);
-
-    //   console.log('res.rows: ',res.rows);
+//     } catch (error) {
+//         console.error('Error authenticating user:', error.message);
+//         res.status(401).json({ "success": false });
+//     }
+// });
 
 
-    const deviceTelemetry = await axios.get(`${thingsboardHost}/api/plugins/telemetry/DEVICE/${deviceId}/values/attributes/SERVER_SCOPE?keys=model,noPanels`, { headers });
-
-    // console.log('deviceTelemetry: ', deviceTelemetry);
-
-    const deviceAttributesdata = deviceTelemetry.data
-    const model = deviceAttributesdata.find(attr => attr.key === 'model').value;
-    const noPanels = deviceAttributesdata.find(attr => attr.key === 'noPanels').value;
-    const curvySimulated = await axios.get(`${thingsboardHost}/curvyval?isc=${isc}&voc=${voc}&module_series=${noPanels}&module_parallel=1&model=${model}`, { headers });
-
-    // console.log('curvySimulated.data: ', curvySimulated.data);
-
-    return curvySimulated.data;
-  } catch (error) {
-    console.error('4)Error creating customer:', error.message);
-  }
-};
-
-const gethistoricData = async (pageIdentifier, jwtTenantToken, deviceId, epochtime) => {
-  try {
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
-    };
-
-    sTime = epochtime;
-    // add 24 hrours to get the 1 day period 
-    eTime = epochtime + 82800000;
-    const deviceTelemetry = await axios.get(`${thingsboardHost}/api/plugins/telemetry/DEVICE/${deviceId}/values/timeseries?keys=i,faultCode,v,voc,currents,simIrradiance,simTemperature,performanceFactor&startTs=${sTime}&endTs=${eTime}&limit=100000`, { headers });
-    if (deviceTelemetry.data['i'] !== undefined) {
-      let voc = deviceTelemetry.data['voc'];
-      let totaldatapoints = 250;
-      let extractedVotlagePoints = voc.map(voc => {
-        const dividedValue = voc.value / (totaldatapoints - 1); // Divide the value by totaldatapoints - 1
-
-        const voltages = Array(totaldatapoints).fill(0).map((_, index) => {
-          if (index === totaldatapoints - 1) {
-            return Math.round(voc.value * 100) / 100; // Last data point retains the original value
-          }
-          return Math.round((index * dividedValue) * 100) / 100; // Increment each data point by divided value
-        });
-
-        const valueString = '[' + voltages.join(', ') + ']'; // Convert the array to string format
-
-        return {
-          ts: voc.ts,
-          value: valueString
-        };
-      });
-
-      const currentPoints = deviceTelemetry.data['currents'].map(item => {
-        const parsedValue = JSON.parse(item.value); // Parse the value string into an array
-        const dividedValues = parsedValue.map(val => val / 1000); // Divide each value by 1000
-        const stringValue = JSON.stringify(dividedValues); // Convert the array back to string
-        return {
-          ts: item.ts,
-          value: stringValue
-        };
-      });
-      // Function to multiply corresponding values
-      const multiplyPoints = (point1, point2) => {
-        const parsedValue1 = JSON.parse(point1.value); // Parse the value string into an array
-        const parsedValue2 = JSON.parse(point2.value); // Parse the value string into an array
-
-        const multipliedValues = parsedValue1.map((val, index) => Math.round(val * parsedValue2[index])); // Multiply   corresponding values andround the result
-
-        const stringValue = JSON.stringify(multipliedValues); // Convert the array back to a string
-        return {
-          ts: point1.ts, // Assuming timestamps are same for both points
-          value: stringValue
-        };
-      };
-      // Multiply the points
-      const powerPoints = extractedVotlagePoints.map((voltagePoint, index) => multiplyPoints(voltagePoint, currentPoints[index]));
-
-      let pmp = [];
-      let index = [];
-      powerPoints.forEach(item => {
-        // Remove square brackets and parse the value string into an array of integers
-        let values = item.value.substring(1, item.value.length - 1).split(',').map(Number);
-
-        // Find the maximum value and its index
-        let maxVal = Math.max(...values);
-        let maxIdx = values.indexOf(maxVal);
-
-        // Create objects with timestamp and maximum value/index
-        let pmpObj = {
-          ts: item.ts,
-          value: maxVal
-        };
-
-        let indexObj = {
-          ts: item.ts,
-          value: maxIdx
-        };
-
-        // Save the objects
-        pmp.push(pmpObj);
-        index.push(indexObj);
-      });
-
-      let vmp = [];
-      let imp = [];
-
-      index.forEach(idx => {
-        let extractedIndex = idx.value;
-        let currentIdx = currentPoints.findIndex(item => item.ts === idx.ts);
-        let extractedIdx = extractedVotlagePoints.findIndex(item => item.ts === idx.ts);
-
-        if (currentIdx !== -1 && extractedIdx !== -1) {
-          vmp.push({ ts: idx.ts, value: JSON.parse(extractedVotlagePoints[extractedIdx].value)[extractedIndex] });
-          imp.push({ ts: idx.ts, value: JSON.parse(currentPoints[currentIdx].value)[extractedIndex] });
-        }
-      });
-
-      let isc = [];
-      isc = deviceTelemetry.data.currents.map(data => {
-        const parsedValue = JSON.parse(data.value);
-        const lastValue = parsedValue[0] / 1000;
-
-        return {
-          'ts': data.ts,
-          'value': lastValue.toFixed(2)
-        };
-      });
-
-      const ff = pmp.map((pmpItem, index) => {
-        const iscValue = parseFloat(isc[index].value);
-        const vocValue = parseFloat(voc[index].value);
-        const pmpValue = pmpItem.value;
-
-        // Check if ISC and VOC are non-zero before calculating FF
-        if (iscValue !== 0 && vocValue !== 0) {
-          const fillFactor = (pmpValue / (iscValue * vocValue)).toFixed(2); // Round FF to 2 decimal places
-          return { ts: pmpItem.ts, value: parseFloat(fillFactor) };
-        } else {
-          return { ts: pmpItem.ts, value: 0 }; // Set FF to 0 if ISC or VOC is zero to avoid division by zero error
-        }
-      });
-
-      let pop = [];
-      let iop = [];
-      let vop = [];
-      iop = deviceTelemetry.data.i;
-      vop = deviceTelemetry.data.v;
-      pop = iop.map((iopItem, index) => {
-        const iopValue = parseFloat(iopItem.value);
-        const vopValue = parseFloat(vop[index].value);
-
-        // Multiply values and round to 0 decimal places
-        const popValue = Math.round(iopValue * vopValue);
-
-        return { ts: iopItem.ts, value: popValue };
-      });
-
-      deviceTelemetry.data.isc = isc;
-      deviceTelemetry.data.pmp = pmp;
-      deviceTelemetry.data.vmp = vmp;
-      deviceTelemetry.data.imp = imp;
-      deviceTelemetry.data.ff = ff;
-      deviceTelemetry.data.pop = pop;
-      deviceTelemetry.data.voltages = extractedVotlagePoints;
-      deviceTelemetry.data.currents = currentPoints;
-      deviceTelemetry.data.power = powerPoints;
-
+// app.get('/Existing_Tenant', function (req, res) {
+//     res.sendFile(path.join(__dirname, 'public', '/LOGIN_SIGNIN_HTML/Existing Tenant.html'));
+// });
+app.post('/onLoad', authenticateToken, async function (req, res) {
+    if (userData[req.user.name] && userData[req.user.name].role) {
+        role = userData[req.user.name].role;
+        boolean = true;
     } else {
+        role = 'NA';
+        boolean = false;
+    }
+    res.json({ "role": role, "success": boolean });
+});
 
-      deviceTelemetry.data.isc = [];
-      deviceTelemetry.data.voc = [];
-      deviceTelemetry.data.ff = [];
+app.post('/LoginApp', async function (req, res) {
+    credsJSON = req.body;
+    //console.log({credsJSON});
+    //userData[req.user.name].cred = credsJSON;
+    try {
+        const authResult = await getUserToken(credsJSON);
+        const tokenUser = (await authResult).tokenUser;
+        const boolean = (await authResult).boolean;
 
-      deviceTelemetry.data.imp = [];
-      deviceTelemetry.data.vmp = [];
-      deviceTelemetry.data.pmp = [];
+        //
+        if (boolean) {
 
-      deviceTelemetry.data.pop = [];
-      deviceTelemetry.data.i = [];
-      deviceTelemetry.data.v = [];
+            const username = req.body.username;
+            const user = { name: username };
+            const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET);
+            //console.log({ username, accessToken });
+            //
 
-      deviceTelemetry.data.performanceFactor = [];
-      deviceTelemetry.data.simIrradiance = [];
-      deviceTelemetry.data.simTemperature = [];
+            const userDetails = await getUserDeatils(tokenUser);
+            //console.log({userDetails});
+            //     if(userDetails === 0){
+            //         res.json({ "success": false });
+            //     };
 
-      deviceTelemetry.data.voltages = [];
-      deviceTelemetry.data.currents = [];
-      deviceTelemetry.data.power = [];
-      deviceTelemetry.data.faultCode = [];
+            //     if(userDetails.additionalInfo.description === ''){
+            //         res.json({ "success": false });
+            //     }
+            //     else{
+            //     const role = userDetails.additionalInfo.description;
+            //     if(role === "Installer"){
+            //        userData[req.user.name].tenantUserId = userDetails.id.id;
+            //        userData[req.user.name].tenantId = userDetails.customerId.id;
+            //     }
+            //     else{
+            //         userData[req.user.name].customerUserId = userDetails.id.id;
+            //         userData[req.user.name].customerId = userDetails.customerId.id;
+            //     }
+            //     res.json({ "role": role, "success": boolean });
+            // }
+            if (userDetails === 0) {
+                res.json({ "success": false });
+            }
+            else {
+                if (userDetails.additionalInfo.description === '') {
+                    res.json({ "success": false });
+                }
+                else {
+                    const role = userDetails.additionalInfo.description;
 
-    };
-    return deviceTelemetry.data;
-  } catch (error) {
-    console.error('5) Error getting histroicData', error.message);
-  }
+                    if (!userData[username]) {
+                        // Initialize the userData[username] object if it doesn't exist
+                        userData[username] = {};
+                    }
 
-};
+                    userData[username].role = role;
 
+                    if (role === "Installer") {
+                        userData[username].tenantUserId = userDetails.id.id;
+                        userData[username].tenantId = userDetails.customerId.id;
+                    }
+                    else {
+                        userData[username].customerUserId = userDetails.id.id;
+                        userData[username].customerId = userDetails.customerId.id;
+                    }
+                    //console.log('userData : ', userData);
+                    res.json({ "role": role, "success": boolean, "accessToken": accessToken });
+                }
+            };
+        };
+    } catch (error) {
+        console.error('1) Error getting Tenant JWT token:', error.message);
+    }
+});
 
-// const scanIV = async (pageIdentifier, jwtTenantToken, deviceId) => {
-//   try {
-//     const headers = {
-//       'accept': 'application/json',
-//       'Content-Type': 'application/json',
-//       'X-Authorization': `Bearer ${jwtTenantToken}`,
-//     };
-//     const json_data = {
-//       'method': 'goButton',
-//       'params': {},
-//     };
+app.post('/Login', async function (req, res) {
+    credsJSON = req.body;
+    //console.log({credsJSON});
+    //userData[req.user.name].cred = credsJSON;
+    try {
+        const authResult = await getUserToken(credsJSON);
+        const tokenUser = (await authResult).tokenUser;
+        const boolean = (await authResult).boolean;
+        //console.log('boolean: ',boolean);
+        //
+        if (boolean) {
 
-//     const response = await axios.post(
-//       `${thingsboardHost}/api/rpc/oneway/${deviceId}`,
-//       json_data, // Pass JSON data as the request body
-//       {
-//         headers: headers,
-//       }
-//     );
-//     return response.data;
-//   } catch (error) {
-//     console.error('Error Scanning:', error.message);
-//   }
-// };
+            const username = req.body.username;
+            const user = { name: username };
+            const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: 86400 });
+            //console.log({ username, accessToken });
+            //
 
-const scanIV = async (pageIdentifier, jwtTenantToken, deviceId) => {
-  try {
-    const headers = {
-      'accept': 'application/json',
-      'Content-Type': 'application/json',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
-    };
-    const json_data = {
-      'method': 'goButton',
-      'params': {},
-    };
+            const userDetails = await getUserDeatils(tokenUser);
+            //console.log({userDetails});
+            //     if(userDetails === 0){
+            //         res.json({ "success": false });
+            //     };
 
-    const response = await axios.post(
-      `${thingsboardHost}/api/rpc/oneway/${deviceId}`,
-      json_data, // Pass JSON data as the request body
-      {
-        headers: headers,
-      }
-    );
+            //     if(userDetails.additionalInfo.description === ''){
+            //         res.json({ "success": false });
+            //     }
+            //     else{
+            //     const role = userDetails.additionalInfo.description;
+            //     if(role === "Installer"){
+            //        userData[req.user.name].tenantUserId = userDetails.id.id;
+            //        userData[req.user.name].tenantId = userDetails.customerId.id;
+            //     }
+            //     else{
+            //         userData[req.user.name].customerUserId = userDetails.id.id;
+            //         userData[req.user.name].customerId = userDetails.customerId.id;
+            //     }
+            //     res.json({ "role": role, "success": boolean });
+            // }
+            if (userDetails === 0) {
+                res.json({ "success": false });
+            }
+            else {
+                if (userDetails.additionalInfo.description === '') {
+                    res.json({ "success": false });
+                }
+                else {
+                    const role = userDetails.additionalInfo.description;
 
-    if (response.status !== 200) {
-      throw new Error(`Scan failed with status code ${response.status}`);
+                    if (!userData[username]) {
+                        // Initialize the userData[username] object if it doesn't exist
+                        userData[username] = {};
+                    }
+
+                    userData[username].role = role;
+
+                    if (role === "Installer") {
+                        userData[username].tenantUserId = userDetails.id.id;
+                        userData[username].tenantId = userDetails.customerId.id;
+                    }
+                    else {
+                        userData[username].customerUserId = userDetails.id.id;
+                        userData[username].customerId = userDetails.customerId.id;
+                    }
+                    //console.log('userData : ', userData);
+                    res.json({ "role": role, "success": boolean, "accessToken": accessToken });
+                }
+            };
+        }
+        else {
+            res.json({ "role": null, "success": boolean, "accessToken": null });
+        };
+    } catch (error) {
+        console.error('1) Error getting Tenant JWT token:', error.message);
+        console.log('1) Error getting Tenant JWT token:', error.message);
+    }
+});
+
+app.get('/tenantHome', function (req, res) {
+    res.sendFile(path.join(__dirname, 'public', '/HTML/tenantHome.html'));
+});
+
+app.get('/tenantAlarm', function (req, res) {
+    res.sendFile(path.join(__dirname, 'public', '/HTML/tenantAlarm.html'));
+});
+
+app.get('/tenantDashboard', function (req, res) {
+    res.sendFile(path.join(__dirname, 'public', '/HTML/tenantDashboard.html'));
+});
+
+app.get('/tenantDevice', function (req, res) {
+    res.sendFile(path.join(__dirname, 'public', '/HTML/tenantDevice.html'));
+});
+
+app.get('/tenantAsset', function (req, res) {
+    res.sendFile(path.join(__dirname, 'public', '/HTML/tenantAsset.html'));
+});
+
+app.get('/tenantCustomer', function (req, res) {
+    res.sendFile(path.join(__dirname, 'public', '/HTML/tenantCustomer.html'));
+});
+
+app.get('/tenantNotification', function (req, res) {
+    res.sendFile(path.join(__dirname, 'public', '/HTML/tenantNotification.html'));
+});
+
+app.get('/customerHome', function (req, res) {
+    res.sendFile(path.join(__dirname, 'public', '/HTML/customerHome.html'));
+});
+
+// app.get('/customerHome', function (req, res) {
+//     const customerId = req.query.customerId;
+//     res.render('customerHome', { customerId });
+// });
+
+// app.get('/customerDash', authenticateToken, function (req, res) {
+//     res.sendFile(path.join(__dirname, 'public', '/HTML/customerDashboard.html'));
+// });
+
+app.post('/setDevice', authenticateToken, function (req, res) {
+    userData[req.user.name].deviceId = req.body.deviceId;
+    //console.log('req.query.deviceId in app.js from /setDevice: ', userData[req.user.name].deviceId);
+    let setDevice = true;
+    res.json(setDevice);
+});
+
+app.get('/customerDashboard', function (req, res) {
+    res.sendFile(path.join(__dirname, 'public', '/HTML/customerDashboard.html'));
+});
+
+app.get('/customerDash', authenticateToken, function (req, res) {
+    userData[req.user.name].deviceId = req.query.deviceId;
+    //console.log('req.query.deviceId in app.js from /customerDashboard: ', userData[req.user.name].deviceId);
+    res.sendFile(path.join(__dirname, 'public', '/HTML/customerDashboard.html'));
+});
+
+app.get('/customerAlarm', function (req, res) {
+    res.sendFile(path.join(__dirname, 'public', '/HTML/customerAlarm.html'));
+});
+
+app.post('/setCustomer', authenticateToken, function (req, res) {
+    //console.log('From /setCustomer req.body.customerId = ', req.body.customerId);
+    if (userData[req.user.name].newCustomerId !== undefined) {
+        userData[req.user.name].customerId = userData[req.user.name].newCustomerId;
+    }
+    else if (userData[req.user.name].customerId === undefined && req.body.customerId === undefined) {
+        userData[req.user.name].customerId = userData[req.user.name].customerId;
+    }
+    else if (req.body.customerId !== undefined) {
+        userData[req.user.name].customerId = req.body.customerId;
+    }
+    let setCustomer = true;
+    res.json(setCustomer);
+});
+
+app.get('/customerDevice', function (req, res) {
+    res.sendFile(path.join(__dirname, 'public', '/HTML/customerDevice.html'));
+});
+
+app.get('/customerDev', authenticateToken, function (req, res) {
+    //console.log('req.query.customerId = ',req.query.customerId);
+    if (userData[req.user.name].newCustomerId !== undefined) {
+        userData[req.user.name].customerId = userData[req.user.name].newCustomerId;
+    }
+    else if (userData[req.user.name].customerId === undefined && req.query.customerId === undefined) {
+        userData[req.user.name].customerId = userData[req.user.name].customerId;
+    }
+    else if (req.query.customerId !== undefined) {
+        userData[req.user.name].customerId = req.query.customerId;
     }
 
-    return response.data;
-  } catch (error) {
-    throw error; // Throw the error to be caught by the caller
-  }
-};
+    //console.log('userData[req.user.name].customerId in app.js from /customerDevice: ', userData[req.user.name].customerId);
+    res.sendFile(path.join(__dirname, 'public', '/HTML/customerDevice.html'));
+});
 
-const assignDevice = async (deviceName, jwtTenantToken, customerId) => {
+app.get('/customerAsset', function (req, res) {
+    res.sendFile(path.join(__dirname, 'public', '/HTML/customerAsset.html'));
+});
 
-  const sqlQuery5 = `select id, device_profile_id from device where upper(name) = upper('${deviceName}')`;
-  const sqlQuery7 = `select count(*) cnt from device where customer_id not in ('13814000-1dd2-11b2-8080-808080808080') and upper(name) = upper('${deviceName}')`;
-  let res = null;
+app.get('/customerNotification', function (req, res) {
+    res.sendFile(path.join(__dirname, 'public', '/HTML/customerNotification.html'));
+});
 
-  try {
-    res = await pool.query(sqlQuery5);
+// const refreshInterval = 2 * 60 * 1000; // 2 minutes in milliseconds
 
-    //console.log('res.rows5: ', res.rows);
+// async function refreshCache(pageIdentifier, jwtTenantToken) {
+//     try {
+//         const authResult = await getTenantEntityList(pageIdentifier, jwtTenantToken);
 
-    if (res.rows.length === 0) {
-      throw new Error("Please re-check the device serial number you entered. Looks like there is no device with this serial number in the database.");
+//         const cacheKey = `${pageIdentifier}-${jwtTenantToken}`;
+//         cache.set(cacheKey, authResult, refreshInterval / 1000); // Cache for 2 minutes
+
+//         //console.log(`Cache refreshed for ${cacheKey}`);
+//     } catch (error) {
+//         console.error('Error refreshing cache:', error.message);
+//     }
+// }
+
+// app.post('/tenantEntityList', async (req, res) => {
+//     const pageIdentifier = req.body.pageIdentifier;
+//     await setJwtTenantToken(req);
+//     const cacheKey = `${pageIdentifier}-${jwtTenantToken}`;
+
+
+//     // Check if cached data is available
+//     const cachedData = cache.get(cacheKey);
+//     if (cachedData) {
+//         //console.log('Serving from cache:', cacheKey);
+//         return res.json(cachedData);
+//     }
+
+//     await refreshCache(pageIdentifier, jwtTenantToken);
+//     return res.json(cache.get(cacheKey));
+// });
+
+// // Refresh the cache every 2 minutes
+// setInterval(async () => {
+//     const pageIdentifiers = ['tenantCustomer', 'tenantAlarm', 'tenantDevice', 'tenantAsset'];
+//     await setJwtTenantToken(req);
+//     console.log(jwtTenantToken);
+
+//     for (const pageIdentifier of pageIdentifiers) {
+//         await refreshCache(pageIdentifier, jwtTenantToken);
+//         await new Promise(resolve => setTimeout(resolve, 2*1000)); //keeping a delay of 2 seconds between cache refresh of every page
+//         console.log(`${pageIdentifier} cache got refreshed`);
+//     }
+// }, refreshInterval);
+
+app.post('/tenantEntityList', authenticateToken, async function (req, res) {
+    if (userData[req.user.name].newTenantId !== undefined) {
+        userData[req.user.name].tId = userData[req.user.name].newTenantId;
     }
     else {
+        userData[req.user.name].tId = userData[req.user.name].tenantId;
+    };
+    const pageIdentifier = req.body.pageIdentifier;
+    try {
+        await setJwtTenantToken();
+        //console.log('jwtTenantToken inside /tenantEntityList',jwtTenantToken);
+        const authResult = await getTenantEntityList(pageIdentifier, jwtTenantToken, userData[req.user.name].tId);
+        console.log(authResult);
+        res.json(authResult);
 
-      if (res.rows[0].device_profile_id !== 'ac773360-10a7-11ee-8cb3-398c6452fe3e') {
-        throw new Error("Only IVcurvy device can be added");
-      };
-      deviceId = res.rows[0].id;
+    } catch (error) {
+        console.error('1) Error getting Tenant Customer List:', error.message);
+    }
+});
 
-      // res = await pool.query(sqlQuery7);
+app.post('/customerEntityList', authenticateToken, async function (req, res) {
+    if (userData[req.user.name].newCustomerId !== undefined) {
+        userData[req.user.name].cId = userData[req.user.name].newCustomerId;
+    }
+    else {
+        userData[req.user.name].cId = userData[req.user.name].customerId;
+    };
+    const pageIdentifier = req.body.pageIdentifier;
+    //console.log('customerId read in backend from let customerId: ', userData[req.user.name].cId);
+    try {
 
-      // //console.log('res.rows7: ', res.rows);
+        await setJwtTenantToken();
+        //console.log({ pageIdentifier, jwtTenantToken });
+        const authResult = await getCustomerEntityList(pageIdentifier, jwtTenantToken, userData[req.user.name].cId);
+        //console.log({ authResult });
+        res.json(authResult);
 
-      // if (res.rows[0].cnt === '1') {
-      //   throw new Error("The device is already claimed by other customer. For more guidance please contact us on (02) 6652 9700");
-      // };
+    } catch (error) {
+        console.error('1) Error getting Tenant Customer List:', error.message);
+    }
+});
 
-      const url = `${thingsboardHost}/api/customer/${customerId}/device/${deviceId}`;
+app.post('/getSessionDeviceId', authenticateToken, async function (req, res) {
+    const pageIdentifier = req.body.pageIdentifier;
+    if (userData[req.user.name].newCustomerId !== undefined) {
+        userData[req.user.name].cId = userData[req.user.name].newCustomerId;
+    }
+    else {
+        userData[req.user.name].cId = userData[req.user.name].customerId;
+    };
+    let currentdeviceID;
+    if (userData[req.user.name].deviceId === undefined) {
+        await setJwtTenantToken();
+        const deviceList = await getCustomerEntityList(pageIdentifier, jwtTenantToken, userData[req.user.name].cId);
+        // console.log('list:', deviceList)
+        if (deviceList.data.length > 0) {
+            currentdeviceID = deviceList.data[0].deviceId;
+        }
+    } else {
+        currentdeviceID = userData[req.user.name].deviceId;
+    }
+    if (currentdeviceID != undefined) {
+        res.json(currentdeviceID);
+    } else {
+        currentdeviceID = 0;
+        res.json(currentdeviceID);
+    }
 
-      const headers = {
-        'accept': 'application/json',
-        'X-Authorization': `Bearer ${jwtTenantToken}`,
-      };
+});
 
-      const response = await axios.post(url, '', { headers });
-      const deviceTaggingInfo = await response.data;
-      //console.log('deviceTaggingInfo: ', deviceTaggingInfo);
-      //console.log('deviceTaggingInfo.customerId.entityType: ', deviceTaggingInfo.customerId.entityType);
-      // if (deviceTaggingInfo.customerId.entityType !== 'CUSTOMER') {
-      //   const sqlQuery18 = `update public.device set label = 'PVgo' where id = '${deviceId}'`;
-      //   const res1 = await pool.query(sqlQuery18);
-      //   //console.log('res1.rows');
-      // }
+app.post('/customerDeviceTelemetry', authenticateToken, async function (req, res) {
+    const pageIdentifier = req.body.pageIdentifier;
+    const userSelectedDeviceId = req.body.deviceID;
 
-      const macAddress = deviceTaggingInfo.name;
-      const code = macAddress.substr(macAddress.length - 8).replace(/:/g, "");
+    try {
+        const authResult = await getDeviceTelemetry(pageIdentifier, jwtTenantToken, userSelectedDeviceId);
+        //console.log('Data from app.js 123', authResult);
+        res.json(authResult);
+    } catch (error) {
+        console.error('Error fetching telemetry data:', error.message);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
 
-      //console.log({code});
+app.post('/customerSparklineDeviceTelemetry', authenticateToken, async function (req, res) {
+    const pageIdentifier = req.body.pageIdentifier;
+    const userSelectedDeviceId = req.body.deviceID;
+    // console.log('deviceid:', frontendDeviceId)
+    //console.log('deviceId read in backend from let deviceId: ', userData[req.user.name].deviceId);
+    try {
+        await setJwtTenantToken();
 
-      if (deviceTaggingInfo.label === null) {
-        const sqlQuery18 = `update public.device set label = 'PVgo_${code}' where id = '${deviceId}'`;
-        const res1 = await pool.query(sqlQuery18);
-        //console.log('res1.rows');
-      }
-      return deviceTaggingInfo;
+        // console.log('userData[req.user.name].deviceId: ', userData[req.user.name].deviceId);
+        // console.log({ pageIdentifier, jwtTenantToken });
+        const authResult = await getDeviceSparklineTelemetry(pageIdentifier, jwtTenantToken, userSelectedDeviceId);
+        res.json(authResult);
+
+    } catch (error) {
+        console.error('1) Error getting sparkline Customer List:', error.message);
+    }
+});
+
+
+// app.post('/User_Concern_Email', async function (req, res) {
+//     try {
+//     const result = await emailUserConcern(req.body);
+//     res.json(result);
+//     }catch (error) {
+//         res.status(500).json({ error });
+//     }
+// });
+
+app.post('/getName', authenticateToken, async function (req, res) {
+    try {
+        if (req.body.identifier === "C") {
+            if (userData[req.user.name].newCustomerId !== undefined) {
+                id = userData[req.user.name].newCustomerId;
+            }
+            else {
+                id = userData[req.user.name].customerId;
+            }
+        }
+        else if (req.body.identifier === "I") {
+
+            if (newTenantId !== null) {
+                id = newTenantId;
+            }
+            else {
+                id = userData[req.user.name].tenantId;
+            }
+        }
+
+        await setJwtTenantToken();
+        const result = await getCustomerName(id, jwtTenantToken);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error });
+    }
+});
+
+app.post('/homeDetails', authenticateToken, async function (req, res) {
+    try {
+        //console.log('userData[req.user.name].customerId: ', userData[req.user.name].customerId);
+        //console.log('req.user: ', req.user);
+        const pageIdentifier = req.body.pageIdentifier;
+        //console.log({ pageIdentifier });
+        if (pageIdentifier === 'tenantHome') {
+            if (userData[req.user.name].newTenantId !== undefined) {
+                id = userData[req.user.name].newTenantId;
+            }
+            else {
+                id = userData[req.user.name].tenantId;
+            };
+            // console.log({ id });
+        }
+        else if (pageIdentifier === 'customerHome') {
+            if (userData[req.user.name].newCustomerId !== undefined) {
+                id = userData[req.user.name].newCustomerId;
+            }
+            else {
+                id = userData[req.user.name].customerId;
+            }
+        };
+
+        //console.log({ id });
+        await setJwtTenantToken();
+        const result = await homeDetails(id, jwtTenantToken, pageIdentifier);
+        //console.log({ result });
+        res.json(result);
+
+    } catch (error) {
+        res.status(500).json({ error });
+    }
+});
+
+app.post('/unassignDevice', authenticateToken, async function (req, res) {
+    try {
+        const deviceId = req.body.deviceId;
+
+        //console.log({ deviceId });
+        await setJwtTenantToken();
+        const result = await unassignDevice(deviceId, jwtTenantToken);
+        //console.log({ result });
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error });
+    }
+});
+
+app.post('/populateCustomer', authenticateToken, async function (req, res) {
+    try {
+        const customerId = req.body.customerId;
+
+        //console.log({ customerId });
+        await setJwtTenantToken();
+        const result = await getCustomer(customerId, jwtTenantToken);
+        userData[req.user.name].cuId = await result.id.id;
+        //console.log({ result });
+        res.json(result);
+
+    } catch (error) {
+        res.status(500).json({ error });
+    }
+});
+
+app.post('/editCustomer', authenticateToken, async function (req, res) {
+    try {
+        //console.log('req.body inside before /editCustomer: ', req.body);
+        req.body.id = {
+            "entityType": "CUSTOMER",
+            "id": userData[req.user.name].cuId
+        };
+
+        //console.log('req.body inside /editCustomer: ', req.body);
+        await setJwtTenantToken();
+        const result = await editCustomer(req.body, jwtTenantToken);
+        userData[req.user.name].cuId = await result.id.id;
+        //console.log({ result });
+        res.json(result);
+
+    } catch (error) {
+        res.status(500).json({ error });
+    }
+});
+
+app.post('/setDeviceID', authenticateToken, async function (req, res) {
+    //console.log('req.body setDeviceID: ', req.body);
+    try {
+        userData[req.user.name].devId = req.body.deviceId;
+        const result = true;
+        res.json({ result });
+    } catch (error) {
+        res.status(500).json({ error });
+    }
+});
+
+app.post('/editDeviceLable', authenticateToken, async function (req, res) {
+    try {
+        //console.log('req.body inside /editDeviceLable: ', req.body);
+        await setJwtTenantToken();
+        const result = await editDeviceLable(userData[req.user.name].devId, req.body.lable);
+        res.json(result.success);
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/deleteCustomer', authenticateToken, async function (req, res) {
+    try {
+        const customerId = req.body.customerId;
+
+        //console.log({ customerId });
+        await setJwtTenantToken();
+        const result = await deleteCustomer(customerId, jwtTenantToken);
+        //console.log({ result });
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error });
+    }
+});
+
+app.post('/deleteCustomer_A', async function (req, res) {
+    try {
+        const customerId = req.body.customerId;
+
+        console.log({ customerId });
+        await setJwtTenantToken();
+        const result = await deleteCustomer(customerId, jwtTenantToken);
+        //console.log({ result });
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error });
+    }
+});
+
+app.post('/deleteTenant_A', async function (req, res) {
+    try {
+        const tenantId = req.body.tenantId;
+
+        console.log({ tenantId });
+        await setJwtTenantToken();
+        const result = await deleteCustomer(tenantId, jwtTenantToken);
+        //console.log({ result });
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error });
+    }
+});
+
+
+
+app.post('/deviceAttribute', authenticateToken, async function (req, res) {
+    const pageIdentifier = req.body.pageIdentifier;
+    const voc = req.body.voc;
+    const isc = req.body.isc;
+    const deviceId = req.body.deviceID;
+    //console.log('deviceId read in backend from let deviceId: ', userData[req.user.name].deviceId);
+    try {
+        await setJwtTenantToken();
+        //console.log('userData[req.user.name].deviceId: ', userData[req.user.name].deviceId);
+        //console.log({ pageIdentifier, jwtTenantToken });
+        const authResult = await getDeviceAtrributes(pageIdentifier, jwtTenantToken, deviceId, voc, isc);
+        res.json(authResult);
+
+    } catch (error) {
+        console.error('1) Error getting attributes', error.message);
+    }
+});
+
+
+app.post('/historicDData', authenticateToken, async function (req, res) {
+    const pageIdentifier = req.body.pageIdentifier;
+    const historicEpoachTime = req.body.historicepochTime;
+    const deviceID = req.body.deviceID;
+    //console.log('deviceId read in backend from let deviceId: ', userData[req.user.name].deviceId);
+    try {
+        await setJwtTenantToken();
+        // console.log('userData[req.user.name].deviceId: ', userData[req.user.name].deviceId);
+        // console.log({ pageIdentifier, jwtTenantToken });
+        const authResult = await gethistoricData(pageIdentifier, jwtTenantToken, deviceID, historicEpoachTime);
+        res.json(authResult);
+
+    } catch (error) {
+        console.error('1) Error getting attributes', error.message);
+    }
+});
+
+
+app.post('/scanIVCurvy', authenticateToken, async function (req, res) {
+    const pageIdentifier = req.body.pageIdentifier;
+    const deviceId = req.body.deviceID;
+    try {
+        await setJwtTenantToken();
+        // console.log('userData[req.user.name].deviceId: ', userData[req.user.name].deviceId);
+        // console.log({ pageIdentifier, jwtTenantToken });
+        //console.log('Doing a scan now')
+        const authResult = await scanIV(pageIdentifier, jwtTenantToken, deviceId);
+        res.json(authResult);
+    } catch (error) {
+        console.error('Error scanning:', error.message);
+        res.status(500).json({ error: error.message }); // Send the error as JSON response with 500 status code
+    }
+});
+
+// Logout route
+app.post('/logout', authenticateToken, (req, res) => {
+
+    res.status(200).json({ redirectUrl: 'index.html' });
+});
+
+app.post('/Assign_Device_To_Customer', authenticateToken, async function (req, res) {
+    const deviceName = req.body.deviceName;
+
+    //console.log('customerId read in backend from let customerId: ', userData[req.user.name].customerId);
+    //console.log('deviceName: ', deviceName);
+
+    if (userData[req.user.name].newCustomerId !== undefined) {
+        userData[req.user.name].cId = userData[req.user.name].newCustomerId;
+    }
+    else {
+        userData[req.user.name].cId = userData[req.user.name].customerId;
     };
 
-  } catch (error) {
-    //console.log('Error inside assignDevice: ', error);
-    throw error;
-  }
-};
+    try {
+        await setJwtTenantToken();
+        const authResult = await assignDevice(deviceName, jwtTenantToken, userData[req.user.name].cId);
+        //console.log('authResult: ',authResult);
+        res.status(500).json(authResult);
 
-const saveCode = async (toEmail, code) => {
-
-  console.log('toEmail: ', toEmail[0]);
-
-  const sqlQuery10 = `select count(*) cnt from public.verify_email where email = '${toEmail[0]}' and verify = false`;
-  const sqlQuery11 = `INSERT INTO public.verify_email(email, code, verify) VALUES ('${toEmail[0]}', '${code}', false)`;
-  const sqlQuery12 = `select count(*) cnt from public.verify_email where email = '${toEmail[0]}' and verify = true`;
-  const sqlQuery13 = `update public.verify_email set code = '${code}' where email = '${toEmail[0]}' and verify = false`;
-
-  try {
-    const res2 = await pool.query(sqlQuery12);
-    console.log('res2.rows: ', res2.rows);
-
-    if (res2.rows[0].cnt >= '1') {
-      return 0;
-    }
-    else if (res2.rows[0].cnt === '0') {
-
-      const res = await pool.query(sqlQuery10);
-
-      console.log('res.rows: ', res.rows);
-
-      if (res.rows[0].cnt === '0') {
-        const res1 = await pool.query(sqlQuery11);
-
-        console.log('res1.rows: ', res1.rows);
-        return 1;
-      }
-      else if (res.rows[0].cnt === '1') {
-        const res3 = await pool.query(sqlQuery13);
-
-        console.log('res3.rows: ', res3.rows);
-        return 2;
-      }
-
+    } catch (error) {
+        console.error('1) Error while tagging device to customer: ', error.message);
+        res.status(200).json({ error: error.message }); // Send error response to the client
     }
 
-  } catch (error) {
-    console.log('error: ', error);
-    throw error;
-  }
-};
+})
 
 
-const saveCodePwdReset = async (email, code) => {
-
-  console.log('email: ', email);
-
-  const sqlQuery12 = `select count(*) cnt from public.verify_email where email = '${email}' and verify = true`;
-  const sqlQuery13 = `update public.verify_email set code = '${code}' where email = '${email}' and verify = true`;
-
-  try {
-    const res2 = await pool.query(sqlQuery12);
-    console.log('res2.rows: ', res2.rows);
-
-    if (res2.rows[0].cnt >= '1') {
-      const res1 = await pool.query(sqlQuery13);
-      console.log('res1.rows: ', res1.rows);
-      return 1;
+app.post('/getUserJWTToken', authenticateToken, async function (req, res) {
+    if (userData[req.user.name].newCustomerId !== undefined) {
+        userData[req.user.name].cId = userData[req.user.name].newCustomerId;
     }
     else {
-      return 0;
-    }
-
-  } catch (error) {
-    console.log('error: ', error);
-    throw error;
-  }
-};
-
-const verifyEmail = async (email, code) => {
-
-  console.log('email: ', email);
-  let success = null;
-
-  const sqlQuery14 = `select count(*) cnt from public.verify_email where email = '${email}' and code = '${code}'`;
-
-  try {
-    const res = await pool.query(sqlQuery14);
-    console.log('res.rows: ', res.rows);
-
-    if (res.rows[0].cnt === '1') {
-      success = true;
-    }
-    else {
-      success = false;
-    }
-
-    return success;
-
-  } catch (error) {
-    console.log('error: ', error);
-    throw error;
-  }
-};
-
-const checkIfCustomerExists = async (title) => {
-
-  console.log('title: ', title);
-  let success = null;
-
-  const sqlQuery15 = `select count(*) cnt from customer where title = '${title}'`;
-
-  try {
-    const res = await pool.query(sqlQuery15);
-    console.log('res.rows: ', res.rows);
-
-    if (res.rows[0].cnt === '0') {
-      success = true;
-    }
-    else {
-      success = false;
-    }
-
-    return success;
-
-  } catch (error) {
-    console.log('error: ', error);
-    throw error;
-  }
-};
-
-const setVerifyFlagStatus = async (email) => {
-
-  console.log('email: ', email);
-  let success = null;
-
-  const sqlQuery16 = `update public.verify_email set verify = true where email = '${email}'`;
-
-  try {
-    const res = await pool.query(sqlQuery16);
-    console.log('res.rows: ', res.rows);
-
-    success = true;
-
-    return success;
-
-  } catch (error) {
-    console.log('error: ', error);
-    throw error;
-  }
-};
-
-const checkExists = async (email) => {
-
-  console.log('email: ', email);
-  let success = null;
-
-  const sqlQuery20 = `SELECT count(*) cnt FROM public.verify_email where verify = true and email = '${email}'`;
-
-  try {
-    const res = await pool.query(sqlQuery20);
-    console.log('res.rows: ', res.rows);
-
-    if (res.rows[0].cnt === '1') {
-      success = true;
-    }
-    else {
-      success = false;
-    }
-
-    return success;
-
-  } catch (error) {
-    console.log('error: ', error);
-    throw error;
-  }
-};
-
-const getUniquePanelManufacturer = async (pageIdentifier) => {
-  //console.log({ deviceId, voc, isc });
-  try {
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-Authorization': `Bearer ${jwtTenantToken}`,
+        userData[req.user.name].cId = userData[req.user.name].customerId;
     };
+    await setJwtTenantToken();
+    const userjwttoken = await getTheUserjwtToken(jwtTenantToken, userData[req.user.name].cId);
+    res.json(userjwttoken);
+});
+
+app.post('/checkIfExistingCustomer', async function (req, res) {
+    const existingCustomer = await checkIfCustomerExists(req.body.title);
+    res.json({ existingCustomer });
+});
+
+app.post('/sendSignUpEmail', async function (req, res) {
+    try {
+
+        const randomCode = generateRandomCode();
+        console.log('Random code:', randomCode);
+
+        const verifyForm = req.body;
+        console.log('verifyForm: ', verifyForm);
+        //const result = await unassignDevice(deviceId, jwtTenantToken);
+        const toEmail = [verifyForm.email];
+        const emailSubject = "Verification Code for signup";
+        const emailText = `Hi ${verifyForm.title},`;
+        const emailHtml = `Here is your Verification Code: <strong>${randomCode}</strong>. Please enter it on the registration page to complete the process.<br><br><br><strong>Thank you!</strong><br>PVgo<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><hr>Copyright © 2024 PVgo. All rights reserved`;
+        const mailResponse = await sendEmail(toEmail, emailSubject, emailText, emailHtml);
+        console.log('mailResponse: ', mailResponse);
+        if (mailResponse !== undefined) {
+            console.log('inside saveCode');
+            const saveCodeResponse = await saveCode(toEmail, randomCode);
+            console.log('saveCodeResponse : ', saveCodeResponse);
+            res.json({ saveCodeResponse });
+        }
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ error });
+    }
+
+    app.post('/verifySignupCode', async function (req, res) {
+        try {
+
+            console.log('req.body: ', req.body);
+            const verifyStatus = await verifyEmail(req.body.email1, req.body.code);
+            console.log('verifyStatus: ', verifyStatus);
+            res.json({ verifyStatus });
 
 
-    const sqlQuery22 = `SELECT DISTINCT panel_manu FROM public.pannel_info;`;
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({ error });
+        }
+    });
 
-    const res = await pool.query(sqlQuery22);
+    app.post('/setVerifyFlag', async function (req, res) {
+        try {
 
-
-    return res.rows;
-  } catch (error) {
-    console.error('4)Error creating customer:', error.message);
-  }
-};
-
-const getCustomerList = async (pageIdentifier, installerCustomerId) => {
-  try {
-    const sqlQuery23 = `SELECT c2.title, c2.id customerid FROM relation r, customer c1, customer c2 WHERE r.from_type = 'CUSTOMER' AND r.from_id = c2.id AND ( r.additional_info :: json ) ->> 'installerGroup' = c1.title AND c1.id = '${installerCustomerId}' order by 1 desc`;
-    const res = await pool.query(sqlQuery23);
-    return res.rows;
-  } catch (error) {
-    console.error('4)Error creating customer list from FuncBE:', error.message);
-  }
-};
+            console.log('req.body: ', req.body);
+            const verifyFlagStatus = await setVerifyFlagStatus(req.body.email);
+            console.log('verifyFlagStatus: ', verifyFlagStatus);
+            res.json({ verifyFlagStatus });
 
 
-module.exports = { getJwtSysAdmin, getJwtTenant, getUserToken, getUserDeatils, getTenantEntityList, getCustomerEntityList, createCustomer, createCustomerUser, createTenant, getCustomerName, homeDetails, unassignDevice, getCustomer, editCustomer, deleteCustomer, editDeviceLable, getDeviceTelemetry, getDeviceSparklineTelemetry, getDeviceAtrributes, assignDevice, gethistoricData, scanIV, getTheUserjwtToken, saveCode, verifyEmail, checkIfCustomerExists, setVerifyFlagStatus, checkExists, saveCodePwdReset, resetPwd, getUniquePanelManufacturer, getCustomerList };
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({ error });
+        }
+    });
+});
+
+app.post('/checkIfExists', async function (req, res) {
+    try {
+        console.log('req.body.email: ', req.body.email);
+        const existStatus = await checkExists(req.body.email);
+        console.log('existStatus: ', existStatus);
+        res.json({ existStatus });
+
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ error });
+    }
+});
+
+app.post('/emailForgotPwdCode', async function (req, res) {
+    try {
+        const randomCode = generateRandomCode();
+        console.log('Random code:', randomCode);
+        console.log('userData: ', userData);
+        resetPwdEmail = req.body.email;
+        console.log('resetPwdEmail: ', resetPwdEmail);
+        const toEmail = [resetPwdEmail];
+        const emailSubject = "Verification Code for signup";
+        const emailText = `Hi,`;
+        const emailHtml = `Hi,<br><br>We received a request to reset the password for your account. To verify your identity and complete the password reset process, please use the following verification code: <br><br><strong style="font-size:20px;">${randomCode}</strong><br><br><br><strong>Thank you!</strong><br>E_Billing<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><hr>Copyright © 2024 Megawattpower pvt. ltd. All rights reserved`;
+        const mailResponse = await sendEmail(toEmail, emailSubject, emailText, emailHtml);
+        console.log('mailResponse: ', mailResponse);
+        if (mailResponse !== undefined) {
+            console.log('inside saveCode');
+            const saveCodeResponse = await saveCodePwdReset(resetPwdEmail, randomCode);
+            console.log('saveCodeResponse : ', saveCodeResponse);
+            res.json({ saveCodeResponse });
+        }
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ error });
+    }
+});
+
+
+app.post('/verifyResetPwdCode', async function (req, res) {
+    try {
+        console.log('req.body.code: ', req.body.code);
+        const verifyStatus = await verifyEmail(req.body.email, req.body.code);
+        console.log('verifyStatus: ', verifyStatus);
+        res.json({ verifyStatus });
+
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ error });
+    }
+});
+
+app.post('/resetPassword', async function (req, res) {
+    try {
+        let resetPwdStatus;
+        await setJwtTenantToken();
+        const userDetails = await resetPwd(req.body.email, jwtTenantToken); // Call createCustomer function with the request body and token
+        //console.log('userDetails.customerId.id: ',userDetails.customerId.id);
+        if (userDetails.customerId.id === null || userDetails.customerId.id === undefined || userDetails.customerId.id === '') {
+            resetPwdStatus = false;
+        }
+        else {
+            //console.log('req.body.password: ', req.body.password);
+            const newCustomerUser = await createCustomerUser(userDetails, jwtTenantToken, req.body.password);
+            //console.log('newCustomerUser: ',newCustomerUser);
+            resetPwdStatus = true;
+        }
+        res.json({ resetPwdStatus });
+    } catch (error) {
+        res.status(500).json({ error });
+    }
+});
+
+app.post('/updateAlarm', authenticateToken, async function (req, res) {
+    try {
+        const alarmStatus = await updateAlarmStatus(req.body);
+        //console.log('alarmStatus: ', alarmStatus);
+        res.json({ alarmStatus });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ error });
+    }
+});
+
+app.post('/getCustomerList', authenticateToken, async function (req, res) {
+    if (userData[req.user.name].newTenantId !== undefined) {
+        userData[req.user.name].tId = userData[req.user.name].newTenantId;
+    }
+    else {
+        userData[req.user.name].tId = userData[req.user.name].tenantId;
+    };
+    const pageIdentifier = req.body.pageIdentifier;
+    try {
+        await setJwtTenantToken();
+        //console.log('jwtTenantToken inside /tenantEntityList',jwtTenantToken);
+        const authResult = await getCustomerList(pageIdentifier, userData[req.user.name].tId);
+        // console.log(authResult);
+        res.json(authResult);
+
+    } catch (error) {
+        console.error('Error getting Tenant Customer List for dashboard:', error.message);
+    }
+
+});
+
+app.post('/customerDeviceList', authenticateToken, async function (req, res) {
+    const pageIdentifier = req.body.pageIdentifier;
+    const customerID = req.body.customerIDdashboard;
+
+    //console.log('customerId read in backend from let customerId: ', userData[req.user.name].cId);
+    try {
+
+        await setJwtTenantToken();
+        //console.log({ pageIdentifier, jwtTenantToken });
+        const authResult = await getCustomerEntityList(pageIdentifier, jwtTenantToken, customerID);
+        //console.log({ authResult });
+        res.json(authResult);
+
+    } catch (error) {
+        console.error('1) Error getting Tenant Customer List:', error.message);
+    }
+});
+
+app.post('/getUserJWTTokenfortenantdashboard', authenticateToken, async function (req, res) {
+    const customerID = req.body.customerID;
+    await setJwtTenantToken();
+    const userjwttoken = await getTheUserjwtToken(jwtTenantToken, customerID);
+    res.json(userjwttoken);
+});
+
+app.post('/getuniquepanelmanufacturer', authenticateToken, async function (req, res) {
+    const pageIdentifier = req.body.pageIdentifier;
+    try {
+        await setJwtTenantToken();
+
+        const authResult = await getUniquePanelManufacturer(pageIdentifier);
+        res.json(authResult);
+
+    } catch (error) {
+        console.error('1) Error getting panel manufacturer', error.message);
+    }
+});
+
+app.post('/getmodel', authenticateToken, async function (req, res) {
+    const pageIdentifier = req.body.pageIdentifier;
+    const manufacturer = req.body.selectedManufacturer;
+    try {
+        await setJwtTenantToken();
+
+        const authResult = await getmodel(pageIdentifier, manufacturer);
+        res.json(authResult);
+
+    } catch (error) {
+        console.error('1) Error getting panel models', error.message);
+    }
+});
+
+app.post('/getpaneldata', authenticateToken, async function (req, res) {
+    const pageIdentifier = req.body.pageIdentifier;
+    const model = req.body.selectedModel;
+    try {
+        await setJwtTenantToken();
+
+        const authResult = await getpaneldata(pageIdentifier, model);
+        res.json(authResult);
+
+    } catch (error) {
+        console.error('1) Error getting panel models', error.message);
+    }
+});
+
+app.post('/getsimulationStatus', authenticateToken, async function (req, res) {
+    const deviceID = req.body.deviceID;
+    try {
+        await setJwtTenantToken();
+
+        const authResult = await getsimulationStatus(deviceID);
+        res.json(authResult);
+
+    } catch (error) {
+        console.error('1) Error getting simulation status', error.message);
+    }
+});
+

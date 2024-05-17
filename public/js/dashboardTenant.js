@@ -14,6 +14,7 @@ let webSocket;
 let deviceListArray = [];
 let customerID;
 let deviceID;
+let simulationStatus;
 
 document.getElementById('defaultOpen').addEventListener('click', () => {
     tabStatus = 'current';
@@ -34,6 +35,11 @@ document.addEventListener('DOMContentLoaded', function () {
     customerID = localStorage.getItem('customerIDtenantDashboard');
     deviceID = localStorage.getItem('deviceIDtenantDashboard');
 
+    if (deviceID != undefined) {
+        getsimulationstatus();
+        // getsparklineCurve();
+
+    };
     // Function to fetch customer data
     async function fetchCustomerData() {
         const dataForCustomerList = { pageIdentifier };
@@ -45,7 +51,6 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             body: JSON.stringify(dataForCustomerList),
         };
-
         try {
             const responseData = await fetch("/getCustomerList", dataForCustomerListOptions);
             customerData = await responseData.json();
@@ -153,11 +158,14 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
                         if (localStorage.getItem('deviceIDtenantDashboard') != undefined) {
                             // document.getElementById('chart-curvy').innerHTML = '';
+                            // call the function to get simulatyion curvy status
+                            getsimulationstatus();
                             sessionStorage.clear();
                             let labelCurveDiv = document.querySelector('.label-curve');
                             if (labelCurveDiv) {
                                 labelCurveDiv.style.display = 'block'; // Set display to 'none' to hide the element
                             }
+                            // getsparklineCurve();
                             performActionsWithDeviceID();
                         } else {
                             document.getElementById('lastUpdated').innerHTML = ' ';
@@ -286,7 +294,9 @@ document.addEventListener('DOMContentLoaded', function () {
             localStorage.setItem('deviceIDtenantDashboard', selectedDeviceId);
         }
         if (tabStatus === "current" && localStorage.getItem('deviceIDtenantDashboard') !== undefined) {
-
+            // get the simulation status 
+            loading();
+            getsimulationstatus();
             sessionStorage.clear();
             performActionsWithDeviceID();
         } else if (tabStatus === "historic") {
@@ -299,7 +309,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('parameter-graph').innerHTML = '<img src="../images/notfound.PNG" class="image-modify" alt="No data found">';
                 returnzero();
                 disableallbtn();
-
             }
         };
     });
@@ -636,14 +645,25 @@ function updateUI(indexValue) {
     createHistoricSparklineImage(jsonData['ff'], 'sparkline-image-historical-ff', `${jsonData['ff'][indexValue].value}`, jsonData['ff'][indexValue].value, historicTs);
 
     // Tcell DATA
-    createHistoricSparklineImage(jsonData['simTemperature'], 'sparkline-image-historical-tcell', `${jsonData['simTemperature'][indexValue].value}°C`, jsonData['simTemperature'][indexValue].value, historicTs);
+    if (simulationStatus === true) {
+        createHistoricSparklineImage(jsonData['simTemperature'], 'sparkline-image-historical-tcell', `${jsonData['simTemperature'][indexValue].value}°C`, jsonData['simTemperature'][indexValue].value, historicTs);
+    } else {
+        createzerosparkline('sparkline-image-historical-tcell')
+    }
 
     // GEFF DATA
-    createHistoricSparklineImage(jsonData['simIrradiance'], 'sparkline-image-historical-Geff', `${jsonData['simIrradiance'][indexValue].value}W/m²`, jsonData['simIrradiance'][indexValue].value, historicTs);
+    if (simulationStatus === true) {
+        createHistoricSparklineImage(jsonData['simIrradiance'], 'sparkline-image-historical-Geff', `${jsonData['simIrradiance'][indexValue].value}W/m²`, jsonData['simIrradiance'][indexValue].value, historicTs);
+    } else {
+        createzerosparkline('sparkline-image-historical-Geff')
+    }
 
     // PF DATA
-    createHistoricSparklineImage(jsonData['performanceFactor'], 'sparkline-image-historical-pf', `${jsonData['performanceFactor'][indexValue].value}%`, jsonData['performanceFactor'][indexValue].value, historicTs);
-
+    if (simulationStatus === true) {
+        createHistoricSparklineImage(jsonData['performanceFactor'], 'sparkline-image-historical-pf', `${jsonData['performanceFactor'][indexValue].value}%`, jsonData['performanceFactor'][indexValue].value, historicTs);
+    } else {
+        createzerosparkline('sparkline-image-historical-pf')
+    }
     // CREATE THE HISTORIC CURVY CHART
     timestampSlider.value = indexValue;
     historiccurrent = jsonData['currents'][indexValue].value;
@@ -739,6 +759,7 @@ function play() {
 async function performActionsWithDeviceID() {
     // console.log(deviceID);
     //get the recent curvy data
+    getsparklineCurve();
     document.getElementById('chart-curvy').innerHTML = '';
     let labelCurveDiv = document.querySelector('.label-curve');
     if (labelCurveDiv) {
@@ -834,17 +855,12 @@ async function performActionsWithDeviceID() {
         } else {
             if (parsed_data.data && parsed_data.data.appStatus && parsed_data.data.appStatus[0] && parsed_data.data.appStatus[0][0]) {
                 lasttime = parsed_data.data.appStatus[0][0];
-            } else if (parsed_data.data && parsed_data.data.voc && parsed_data.data.voc[0] && parsed_data.data.voc[0][0]) {
-                lasttime = parsed_data.data.voc[0][0];
-            } else {
-                lasttime = parsed_data.data.performanceFactor[0][0];
+                sessionStorage.setItem('lastscan', lasttime)
             };
-            difflast = ((new Date().getTime()) - lasttime) / 60000;
-            if (difflast < 30) {
-                getsparklineCurve();
-            } else {
+            difflast = ((new Date().getTime()) - (sessionStorage.getItem('lastscan'))) / 60000;
+            if (difflast > 30) {
                 sessionStorage.setItem('trendLineData', JSON.stringify({}));
-            }
+            };
             // Check if the currents is part of the new called websocket, if yes save it in the session cache.
             if (parsed_data.data && parsed_data.data.currents && parsed_data.data.currents.length > 0) {
                 sessionStorage.setItem('currentPoints', parsed_data.data.currents[0][1]);
@@ -921,20 +937,23 @@ async function performActionsWithDeviceID() {
                 updateWifiSignal(rssi, rssi_lastupdate);
 
             }
-
-            if (parsed_data.data && parsed_data.data.simTemperature && parsed_data.data.simTemperature.length > 0) {
-                sessionStorage.setItem('simT', parsed_data.data.simTemperature[0][1]);
-                sessionStorage.setItem('simG', parsed_data.data.simIrradiance[0][1]);
-                sessionStorage.setItem('pf', parsed_data.data.performanceFactor[0][1]);
+            if (simulationStatus === true) {
+                if (parsed_data.data && parsed_data.data.simTemperature && parsed_data.data.simTemperature.length > 0) {
+                    sessionStorage.setItem('simT', parsed_data.data.simTemperature[0][1]);
+                    sessionStorage.setItem('simG', parsed_data.data.simIrradiance[0][1]);
+                    sessionStorage.setItem('pf', parsed_data.data.performanceFactor[0][1]);
+                };
+            } else {
+                sessionStorage.setItem('simT', 0);
+                sessionStorage.setItem('simG', 0);
+                sessionStorage.setItem('pf', 0);
             };
-
             if (parsed_data.data && parsed_data.data.iSlow && parsed_data.data.iSlow.length > 0) {
                 sessionStorage.setItem('iop', parsed_data.data.iSlow[0][1]);
-            }
-
+            };
             if (parsed_data.data && parsed_data.data.vSlow && parsed_data.data.vSlow.length > 0) {
                 sessionStorage.setItem('vop', parsed_data.data.vSlow[0][1]);
-            }
+            };
             // get cuurent values from the session cache.
             current = JSON.parse(sessionStorage.getItem('currentPoints'));
 
@@ -987,28 +1006,31 @@ async function performActionsWithDeviceID() {
 
             // Calculate fill factor
             fillfactor = Math.round((voltageAtMaxPoint * currentAtMaxPoint) / (formattedVoc * formattedIsc) * 100) / 100;
+            if (simulationStatus === true) {
+                if (parsed_data.data && parsed_data.data.currents && parsed_data.data.currents.length > 0) {
+                    if (formattedVoc != 0 || formattedIsc != 0) {
+                        const simulatedCurvy = { pageIdentifier: pageIdentifier, voc: formattedVoc, isc: formattedIsc, deviceID: localStorage.getItem('deviceIDtenantDashboard') };
+                        const simCurvyOptions = {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                'Authorization': `Bearer ${token}`,
+                            },
+                            body: JSON.stringify(simulatedCurvy),
+                        };
 
-            if (parsed_data.data && parsed_data.data.currents && parsed_data.data.currents.length > 0) {
-                if (formattedVoc != 0 || formattedIsc != 0) {
-                    const simulatedCurvy = { pageIdentifier: pageIdentifier, voc: formattedVoc, isc: formattedIsc, deviceID: localStorage.getItem('deviceIDtenantDashboard') };
-                    const simCurvyOptions = {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            'Authorization': `Bearer ${token}`,
-                        },
-                        body: JSON.stringify(simulatedCurvy),
+                        const responseSimCurvy = await fetch("/deviceAttribute", simCurvyOptions);
+                        const simulatedCurvyData = await responseSimCurvy.json();
+                        sessionStorage.setItem('simCurrent', handleNull(simulatedCurvyData["Current"]));
+                        sessionStorage.setItem('simVoltage', handleNull(simulatedCurvyData["Voltage"]));
+                    } else {
+                        sessionStorage.setItem('simCurrent', []);
+                        sessionStorage.setItem('simVoltage', []);
                     };
-
-                    const responseSimCurvy = await fetch("/deviceAttribute", simCurvyOptions);
-                    const simulatedCurvyData = await responseSimCurvy.json();
-                    sessionStorage.setItem('simCurrent', handleNull(simulatedCurvyData["Current"]));
-                    sessionStorage.setItem('simVoltage', handleNull(simulatedCurvyData["Voltage"]));
-                } else {
-                    sessionStorage.setItem('simCurrent', []);
-                    sessionStorage.setItem('simVoltage', []);
-                };
-
+                }
+            } else {
+                sessionStorage.setItem('simCurrent', []);
+                sessionStorage.setItem('simVoltage', []);
             };
 
             simCurrent = sessionStorage.getItem('simCurrent').split(",").map(parseFloat);
@@ -1020,26 +1042,45 @@ async function performActionsWithDeviceID() {
             checkboxstatuscode = sessionStorage.getItem('checkboxstatus');
             createIVchart(formattedCurrent, voltagepoints, voltageAtMaxPoint, currentAtMaxPoint, powerAtMaxPoint, formattedVoperating, formattedIoperating, formattedOperatingPower, formattedPower, 'chart-curvy', simCurrent, simVoltage, checkboxstatuscode);
 
-            cellTemperature = sessionStorage.getItem('simT');
-            simIrradiance = sessionStorage.getItem('simG');
-            performanceFactor = sessionStorage.getItem('pf');
+            if (simulationStatus === true) {
+                cellTemperature = sessionStorage.getItem('simT');
+                simIrradiance = sessionStorage.getItem('simG');
+                performanceFactor = sessionStorage.getItem('pf');
 
-            // create sparkline chart
-            createSparklineImage('sparkline-image-voc', `${formattedVoc} V`);
-            createSparklineImage('sparkline-image-isc', `${formattedIsc} A`);
-            createSparklineImage('sparkline-image-ff', `${fillfactor}`);
+                // create sparkline chart
+                createSparklineImage('sparkline-image-voc', `${formattedVoc} V`);
+                createSparklineImage('sparkline-image-isc', `${formattedIsc} A`);
+                createSparklineImage('sparkline-image-ff', `${fillfactor}`);
 
-            createSparklineImage('sparkline-image-vmp', `${voltageAtMaxPoint} V`);
-            createSparklineImage('sparkline-image-imp', `${currentAtMaxPoint} A`);
-            createSparklineImage('sparkline-image-pmp', `${powerAtMaxPoint}W`);
+                createSparklineImage('sparkline-image-vmp', `${voltageAtMaxPoint} V`);
+                createSparklineImage('sparkline-image-imp', `${currentAtMaxPoint} A`);
+                createSparklineImage('sparkline-image-pmp', `${powerAtMaxPoint}W`);
 
-            createSparklineImage('sparkline-image-vop', `${formattedVoperating} V`);
-            createSparklineImage('sparkline-image-iop', `${formattedIoperating} A`);
-            createSparklineImage('sparkline-image-pop', `${formattedOperatingPower}W`);
+                createSparklineImage('sparkline-image-vop', `${formattedVoperating} V`);
+                createSparklineImage('sparkline-image-iop', `${formattedIoperating} A`);
+                createSparklineImage('sparkline-image-pop', `${formattedOperatingPower}W`);
 
-            createSparklineImage('sparkline-image-temperature', `${cellTemperature}°C`);
-            createSparklineImage('sparkline-image-irradiance', `${simIrradiance}W/m²`);
-            createSparklineImage('sparkline-image-perfromance-factor', `${performanceFactor}%`);
+                createSparklineImage('sparkline-image-temperature', `${cellTemperature}°C`);
+                createSparklineImage('sparkline-image-irradiance', `${simIrradiance}W/m²`);
+                createSparklineImage('sparkline-image-perfromance-factor', `${performanceFactor}%`);
+            } else {
+                // create sparkline chart
+                createSparklineImage('sparkline-image-voc', `${formattedVoc} V`);
+                createSparklineImage('sparkline-image-isc', `${formattedIsc} A`);
+                createSparklineImage('sparkline-image-ff', `${fillfactor}`);
+
+                createSparklineImage('sparkline-image-vmp', `${voltageAtMaxPoint} V`);
+                createSparklineImage('sparkline-image-imp', `${currentAtMaxPoint} A`);
+                createSparklineImage('sparkline-image-pmp', `${powerAtMaxPoint}W`);
+
+                createSparklineImage('sparkline-image-vop', `${formattedVoperating} V`);
+                createSparklineImage('sparkline-image-iop', `${formattedIoperating} A`);
+                createSparklineImage('sparkline-image-pop', `${formattedOperatingPower}W`);
+
+                createzerosparkline('sparkline-image-temperature')
+                createzerosparkline('sparkline-image-irradiance')
+                createzerosparkline('sparkline-image-perfromance-factor')
+            };
         };
     };
     // on websocket is closed, connection will be closed
@@ -1486,7 +1527,7 @@ async function createSparklineImage(elementID, value_sparline) {
                 text: `${value_sparline}`,
                 showarrow: false,
                 font: {
-                    size: 25,
+                    size: 20,
                     color: 'brown',
                 },
             }
@@ -1499,8 +1540,10 @@ async function createSparklineImage(elementID, value_sparline) {
     };
     Plotly.newPlot(elementID, [trace], layout, config);
 
-    Plotly.toImage(elementID, { format: 'png', width: 400, height: 100 }).then(function (url) {
+    Plotly.toImage(elementID, { format: 'svg', width: 250, height: 50 }).then(function (url) {
         document.getElementById(elementID).src = url;
+        document.getElementById(elementID).classList.remove('image-modify2');
+        document.getElementById(elementID).classList.add('sparklineimages');
     });
 };
 
@@ -2323,7 +2366,6 @@ function faultcodedecode(clickedFaultValue) {
     const faultErrors = nonZeroFaults.map(faultCode => errorList[faultCode]);
     const errorMessage = faultErrors.join("<br>");
     return errorMessage;
-
 }
 function returnzero() {
     if (tabStatus === "current") {
@@ -2352,7 +2394,7 @@ function returnzero() {
         createzerosparkline("sparkline-image-historical-tcell");
         createzerosparkline("sparkline-image-historical-Geff");
         createzerosparkline("sparkline-image-historical-pf");
-    }
+    };
 };
 
 function createzerosparkline(elementID) {
@@ -2421,7 +2463,7 @@ function createzerosparkline(elementID) {
                 text: textval,
                 showarrow: false,
                 font: {
-                    size: 25,
+                    size: 20,
                     color: 'grey',
                 },
             }
@@ -2434,8 +2476,10 @@ function createzerosparkline(elementID) {
     };
     // Plot the chart
     Plotly.newPlot(elementID, data, layout, config);
-    Plotly.toImage(elementID, { format: 'png', width: 250, height: 80 }).then(function (url) {
+    Plotly.toImage(elementID, { format: 'svg', width: 250, height: 50 }).then(function (url) {
         document.getElementById(elementID).src = url;
+        document.getElementById(elementID).classList.remove('image-modify2');
+        document.getElementById(elementID).classList.add('sparklineimages');
     });
 };
 
@@ -2445,7 +2489,7 @@ function disableallbtn() {
     document.getElementById('next-btn').disabled = true;
     document.getElementById('replay-btn').disabled = true;
     document.getElementById('timestampSlider').disabled = true;
-    document.getElementById('date-forward').disabled = true;
+    document.getElementById('date-forward').disabled = true; ``
     document.getElementById('date-backward').disabled = true;
     document.getElementById('dropdown-content').disabled = true;
     document.getElementById('maxbtn').disabled = true;
@@ -2488,6 +2532,18 @@ function loading() {
         }
         document.getElementById('lastUpdated').innerHTML = ' ';
         document.getElementById('chart-curvy').innerHTML = '<img src="../images/icons8-loading.gif" class="image-modify2" alt="No data found">';
+        generateSparklineLoading('sparkline-image-voc');
+        generateSparklineLoading('sparkline-image-isc');
+        generateSparklineLoading('sparkline-image-ff');
+        generateSparklineLoading('sparkline-image-vmp');
+        generateSparklineLoading('sparkline-image-imp');
+        generateSparklineLoading('sparkline-image-pmp');
+        generateSparklineLoading('sparkline-image-vop');
+        generateSparklineLoading('sparkline-image-iop');
+        generateSparklineLoading('sparkline-image-pop');
+        generateSparklineLoading('sparkline-image-temperature');
+        generateSparklineLoading('sparkline-image-irradiance');
+        generateSparklineLoading('sparkline-image-perfromance-factor');
 
     } else if (tabStatus === "historic") {
         let labelCurveDiv = document.querySelector('.label-curve-his');
@@ -2500,4 +2556,48 @@ function loading() {
     };
 };
 
+async function getsimulationstatus() {
+    const dataSimulationStatus = { deviceID: localStorage.getItem('deviceIDtenantDashboard') };
+    const optionSimulationStatus = {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(dataSimulationStatus),
+    };
 
+    const responseSimulationStstus = await fetch("/getsimulationStatus", optionSimulationStatus);
+    const simulationresponseData = await responseSimulationStstus.json();
+
+    let foundModelKey = false;
+    let modelValueExists = false;
+
+    for (let item of simulationresponseData) {
+        if (item.key === "model") {
+            foundModelKey = true;
+            // Check if value is present and not null or undefined
+            if (item.value !== null && item.value !== undefined) {
+                modelValueExists = true;
+            }
+            break; // No need to continue once "model" key is found
+        }
+    }
+
+    // Determine simulationStatus based on conditions
+    if (!foundModelKey) {
+        simulationStatus = false; // Key "model" not found
+    } else if (foundModelKey && !modelValueExists) {
+        simulationStatus = false; // Key "model" found but no value
+    } else {
+        simulationStatus = true; // Key "model" found with a valid value
+    }
+
+    console.log('simulationStatus', simulationStatus);
+};
+
+async function generateSparklineLoading(elementID) {
+    document.getElementById(elementID).classList.remove('sparklineimages');
+    document.getElementById(elementID).src = "../images/icons8-loading.gif";
+    document.getElementById(elementID).classList.add('image-modify2');
+}

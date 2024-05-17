@@ -1745,4 +1745,21 @@ const setAlarmSettings = async (deviceId, alarmSettings) => {
   }
 };
 
-module.exports = { getJwtSysAdmin, getJwtTenant, getUserToken, getUserDeatils, getTenantEntityList, getCustomerEntityList, createCustomer, createCustomerUser, createTenant, getCustomerName, homeDetails, unassignDevice, getCustomer, editCustomer, deleteCustomer, editDeviceLable, getDeviceTelemetry, getDeviceSparklineTelemetry, getDeviceAtrributes, assignDevice, gethistoricData, scanIV, getTheUserjwtToken, saveCode, verifyEmail, checkIfCustomerExists, setVerifyFlagStatus, checkExists, saveCodePwdReset, resetPwd, updateAlarmStatus, getUniquePanelManufacturer, getCustomerList, getmodel, getpaneldata, getAlarmSettings, setAlarmSettings };
+const getsimulationStatus = async (deviceId) => {
+  //console.log({ deviceId, voc, isc });
+  try {
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Authorization': `Bearer ${jwtTenantToken}`,
+    };
+
+    const deviceAttributes = await axios.get(`${thingsboardHost}/api/plugins/telemetry/DEVICE/${deviceId}/values/attributes/SERVER_SCOPE`, { headers });
+
+    return deviceAttributes.data;
+  } catch (error) {
+    console.error('4)Error getting simulated data:', error.message);
+  }
+};
+
+
+module.exports = { getJwtSysAdmin, getJwtTenant, getUserToken, getUserDeatils, getTenantEntityList, getCustomerEntityList, createCustomer, createCustomerUser, createTenant, getCustomerName, homeDetails, unassignDevice, getCustomer, editCustomer, deleteCustomer, editDeviceLable, getDeviceTelemetry, getDeviceSparklineTelemetry, getDeviceAtrributes, assignDevice, gethistoricData, scanIV, getTheUserjwtToken, saveCode, verifyEmail, checkIfCustomerExists, setVerifyFlagStatus, checkExists, saveCodePwdReset, resetPwd, updateAlarmStatus, getUniquePanelManufacturer, getCustomerList, getmodel, getpaneldata, getAlarmSettings, setAlarmSettings, getsimulationStatus };

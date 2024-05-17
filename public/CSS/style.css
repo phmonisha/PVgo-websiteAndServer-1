@@ -1758,113 +1758,64 @@ label {
 
 
 
-#sparkline-image-vmp {
-  max-width: 100%;
-  grid-column: span 2;
+.sparklineimages {
+  width: 100%;
   display: block;
   margin: 0 auto;
   height: 100%;
+  min-height: 100%;
   border-radius: 10px 10px 10px 10px;
+}
+
+#sparkline-image-vmp {
+  grid-column: span 2;
+
 }
 
 #sparkline-image-imp {
-  max-width: 100%;
   grid-column: span 2;
-  display: block;
-  margin: 0 auto;
-  height: 100%;
-  border-radius: 10px 10px 10px 10px;
 }
 
 #sparkline-image-pmp {
-  max-width: 100%;
   grid-column: span 2;
-  display: block;
-  margin: 0 auto;
-  height: 100%;
-  border-radius: 10px 10px 10px 10px;
 }
 
 #sparkline-image-vop {
-  max-width: 100%;
   grid-column: span 2;
-  display: block;
-  margin: 0 auto;
-  height: 100%;
-  border-radius: 10px 10px 10px 10px;
 }
 
 #sparkline-image-iop {
-  max-width: 100%;
   grid-column: span 2;
-  display: block;
-  margin: 0 auto;
-  height: 100%;
-  border-radius: 10px 10px 10px 10px;
 }
 
 #sparkline-image-pop {
-  max-width: 100%;
   grid-column: span 2;
-  display: block;
-  margin: 0 auto;
-  height: 100%;
-  border-radius: 10px 10px 10px 10px;
 }
 
 #sparkline-image-voc {
-  max-width: 100%;
   grid-column: span 2;
-  display: block;
-  margin: 0 auto;
-  height: 100%;
-  border-radius: 10px 10px 10px 10px;
 }
 
 #sparkline-image-isc {
-  max-width: 100%;
   grid-column: span 2;
-  display: block;
-  margin: 0 auto;
-  height: 100%;
-  border-radius: 10px 10px 10px 10px;
 }
 
 #sparkline-image-ff {
-  max-width: 100%;
   grid-column: span 2;
-  display: block;
-  margin: 0 auto;
-  height: 100%;
-  border-radius: 10px 10px 10px 10px;
 }
 
 #sparkline-image-irradiance {
-  max-width: 100%;
   grid-column: span 2;
-  display: block;
-  margin: 0 auto;
-  height: 100%;
-  border-radius: 10px 10px 10px 10px;
 }
 
 #sparkline-image-temperature {
-  max-width: 100%;
   grid-column: span 2;
-  display: block;
-  margin: 0 auto;
-  height: 100%;
-  border-radius: 10px 10px 10px 10px;
 }
 
 #sparkline-image-perfromance-factor {
-  max-width: 100%;
   grid-column: span 2;
-  display: block;
-  margin: 0 auto;
-  height: 100%;
-  border-radius: 10px 10px 10px 10px;
 }
+
 
 /* /////////////////////////////HISTORIC PAGE/////////////////////////////////////////////////////////////////// */
 @media(width>=1140px) {
@@ -2821,6 +2772,6 @@ label {
 
 @media only screen and (max-width: 490px) {
   #myForm {
-      max-width: 100% !important;
+    max-width: 100% !important;
   }
 }

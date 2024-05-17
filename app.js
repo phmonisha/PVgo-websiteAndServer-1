@@ -12,7 +12,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
-const { getJwtSysAdmin, getJwtTenant, getUserToken, getUserDeatils, getTenantEntityList, getCustomerEntityList, createCustomer, createCustomerUser, createTenant, getCustomerName, homeDetails, unassignDevice, getCustomer, editCustomer, deleteCustomer, editDeviceLable, getDeviceTelemetry, getDeviceSparklineTelemetry, getDeviceAtrributes, assignDevice, gethistoricData, scanIV, getTheUserjwtToken, saveCode, verifyEmail, checkIfCustomerExists, setVerifyFlagStatus, checkExists, saveCodePwdReset, resetPwd, updateAlarmStatus, getUniquePanelManufacturer, getCustomerList, getmodel, getpaneldata, getAlarmSettings, setAlarmSettings } = require("./funcBE");
+const { getJwtSysAdmin, getJwtTenant, getUserToken, getUserDeatils, getTenantEntityList, getCustomerEntityList, createCustomer, createCustomerUser, createTenant, getCustomerName, homeDetails, unassignDevice, getCustomer, editCustomer, deleteCustomer, editDeviceLable, getDeviceTelemetry, getDeviceSparklineTelemetry, getDeviceAtrributes, assignDevice, gethistoricData, scanIV, getTheUserjwtToken, saveCode, verifyEmail, checkIfCustomerExists, setVerifyFlagStatus, checkExists, saveCodePwdReset, resetPwd, updateAlarmStatus, getUniquePanelManufacturer, getCustomerList, getmodel, getpaneldata, getAlarmSettings, setAlarmSettings, getsimulationStatus } = require("./funcBE");
 const { saveNewPwd, autenticateUserPWD, saveNewPwdTenant, autenticateTenantUserPWD } = require("./pwdFunc");
 //const { emailUserConcern } = require("./email");
 const sendEmail = require("./sendEmail");
@@ -1471,6 +1471,19 @@ app.post('/populateDeviceList', authenticateToken, async function (req, res) {
 
     } catch (error) {
         console.error('1) Error getting Tenant Customer List:', error.message);
+    }
+});
+
+app.post('/getsimulationStatus', authenticateToken, async function (req, res) {
+    const deviceID = req.body.deviceID;
+    try {
+        await setJwtTenantToken();
+
+        const authResult = await getsimulationStatus(deviceID);
+        res.json(authResult);
+
+    } catch (error) {
+        console.error('1) Error getting simulation status', error.message);
     }
 });
 
