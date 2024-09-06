@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Notification</title>
+    <title>PVgo add user</title>
     <link rel="icon" type="image/x-icon" href="/images/logoCircular.PNG">
 
     <link rel="stylesheet" href="../CSS/style.css">
@@ -15,6 +15,7 @@
     <link
             href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap"
             rel="stylesheet">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <style>
         .form {
@@ -81,7 +82,7 @@
     </style>
 </head>
 
-<body>
+<body class="page-identifier" data-page="customerUser">
     <nav class="navbar-layout background">
         <div class="nav-list-layout">
             <div class="logoLayout"><img src="../images/img.PNG" alt="logo"></div>
@@ -168,11 +169,15 @@
                 <form id="registrationForm" class="form">
                     <input type="text" name="firstName" placeholder="First Name" class="inp">
                     <input type="text" name="lastName" placeholder="Last Name" class="inp">
-                    <input type="email" name="email" placeholder="Email Id" class="inp">
-                    <input type="number" name="phone" placeholder="Phone Number" class="inp">
-                    <input type="password" name="password" id="password" placeholder="Password" class="inp">
+                    <input type="email" name="email" placeholder="Email Id*" class="inp" id="email" require>
+                    <input type="number" name="phone" placeholder="Phone Number*" class="inp" require>
+                    <!-- <div class="password-container">
+                        <input type="password" name="password" placeholder="Password" id="password" class="inp">
+                        <span id="togglePassword" class="password-toggle" onclick="togglePasswordVisibility('password')"><img
+                                src="../images/toggle_Icon.png" alt="icon"></span>
+                    </div>
                     <input type="password" name="confirm_password" id="confirm_password" placeholder="Confirm Password"
-                        class="inp">
+                        class="inp"> -->
                     <input type="submit" value="Add User" class="submit">
 
                 </form>
@@ -194,6 +199,7 @@
     <script type="module" src="../js/name.js"></script>
     <script type="module" src="../js/logout.js"></script>
     <script type="module" src="../js/addCustomerUser.js"></script>
+    <script src="../js/pwdToggle.js"></script>
 </body>
 
 </html>

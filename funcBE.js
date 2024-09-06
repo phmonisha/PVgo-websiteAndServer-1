@@ -235,8 +235,8 @@ const createCustomer = async (customerData, jwtTenantToken, tenantId) => {
     };
 
     const relationsCreation = await axios.post(url, relations, { headers });
-    console.log('relationsCreation.data: ',relationsCreation.data);
-    console.log('installerType: ',installerType);
+    console.log('relationsCreation.data: ', relationsCreation.data);
+    console.log('installerType: ', installerType);
 
     if (relationsCreation.data === '' && installerType === 'nonDefault') {
       const relations1 = {
@@ -256,7 +256,7 @@ const createCustomer = async (customerData, jwtTenantToken, tenantId) => {
       };
 
       const relationsCreationDefault = await axios.post(url, relations1, { headers });
-      console.log({relationsCreationDefault});
+      console.log({ relationsCreationDefault });
     }
 
     if (attributeCreation.data === '' && relationsCreation.data === '') {
@@ -572,6 +572,8 @@ const getCustomerEntityList = async (pageIdentifier, jwtTenantToken, customerId)
 
       //console.log('customerId inside customerEntityList customerDevice: ', customerId);
 
+      //console.log({customerId});
+
       intermediateResponse = await axios.get(`${thingsboardHost}/api/customer/${customerId}/devices?pageSize=1&page=0`, { headers });
       if (intermediateResponse.data.totalElements !== 0) {
         itemsPerPage = intermediateResponse.data.totalElements;
@@ -602,7 +604,7 @@ const getCustomerEntityList = async (pageIdentifier, jwtTenantToken, customerId)
             deviceId: item.id.id,
             status: item.active,
           };
-        }))).filter(item => item.deviceProfileId === 'ac773360-10a7-11ee-8cb3-398c6452fe3e'), // Filter data by deviceProfile
+        }))).filter(item => item.deviceProfileId === 'fa909e50-2204-11ef-8d93-e52196e6d77f'), // Filter data by deviceProfile
         hasNext: thingsboardResponse.data.hasNext,
       };
     }
@@ -632,6 +634,7 @@ const getCustomerEntityList = async (pageIdentifier, jwtTenantToken, customerId)
       };
     }
     else if (pageIdentifier === 'customerDashboard' || pageIdentifier === 'tenantDashboard') {
+      //console.log({customerId});
       intermediateResponse = await axios.get(`${thingsboardHost}/api/customer/${customerId}/devices?pageSize=1&page=0`, { headers });
       if (intermediateResponse.data.totalElements !== 0) {
         itemsPerPage = intermediateResponse.data.totalElements;
@@ -639,6 +642,7 @@ const getCustomerEntityList = async (pageIdentifier, jwtTenantToken, customerId)
         itemsPerPage = 1;
       };
       thingsboardResponse = await axios.get(`${thingsboardHost}/api/customer/${customerId}/devices?pageSize=${itemsPerPage}&page=0`, { headers });
+      //console.log('thingsboardResponse.data.data: ', thingsboardResponse.data.data);
 
       modifiedResponse = {
         data: (await Promise.all(thingsboardResponse.data.data.map(async item => {
@@ -659,7 +663,7 @@ const getCustomerEntityList = async (pageIdentifier, jwtTenantToken, customerId)
             label: item.label,
             deviceId: item.id.id,
           };
-        }))).filter(item => item.deviceProfileId === 'ac773360-10a7-11ee-8cb3-398c6452fe3e'), // Filter data by deviceProfile
+        }))).filter(item => item.deviceProfileId === 'fa909e50-2204-11ef-8d93-e52196e6d77f'), // Filter data by deviceProfile
         hasNext: thingsboardResponse.data.hasNext,
       };
     }
@@ -743,11 +747,11 @@ const homeDetails = async (id, jwtTenantToken, pageIdentifier) => {
 
     let res = null;
     if (pageIdentifier === 'tenantHome') {
-      const sqlQuery8 = `WITH mm AS (SELECT r.from_id FROM relation r, customer c1 WHERE r.from_type = 'CUSTOMER' AND (r.additional_info::json) ->> 'installerGroup' = c1.title AND c1.id = '${id}'), customer AS (SELECT count(*) customer FROM customer,mm WHERE id = mm.from_id), device AS (SELECT count(*) device FROM ( SELECT device_profile_id FROM device,mm WHERE device_profile_id = 'ac773360-10a7-11ee-8cb3-398c6452fe3e' AND customer_id = mm.from_id) d), alarm AS (select count(*) alarm from alarm, mm where customer_id = mm.from_id), asset AS (select count(*) asset from asset, mm where customer_id = mm.from_id) select * from customer,device, alarm, asset`;
+      const sqlQuery8 = `WITH mm AS (SELECT r.from_id FROM relation r, customer c1 WHERE r.from_type = 'CUSTOMER' AND (r.additional_info::json) ->> 'installerGroup' = c1.title AND c1.id = '${id}'), customer AS (SELECT count(*) customer FROM customer,mm WHERE id = mm.from_id), device AS (SELECT count(*) device FROM ( SELECT device_profile_id FROM device,mm WHERE device_profile_id = 'fa909e50-2204-11ef-8d93-e52196e6d77f' AND customer_id = mm.from_id) d), alarm AS (select count(*) alarm from alarm, mm where customer_id = mm.from_id), asset AS (select count(*) asset from asset, mm where customer_id = mm.from_id) select * from customer,device, alarm, asset`;
       res = await pool.query(sqlQuery8);
     }
     else if (pageIdentifier === 'customerHome') {
-      const sqlQuery9 = `WITH mm AS (SELECT id from customer where id = '${id}'), device AS (SELECT count(*) device FROM ( SELECT device_profile_id FROM device,mm WHERE device_profile_id = 'ac773360-10a7-11ee-8cb3-398c6452fe3e' AND customer_id = mm.id) d), alarm AS (select count(*) alarm from alarm, mm where customer_id = mm.id), asset AS (select count(*) asset from asset, mm where customer_id = mm.id) select * from device, alarm, asset`;
+      const sqlQuery9 = `WITH mm AS (SELECT id from customer where id = '${id}'), device AS (SELECT count(*) device FROM ( SELECT device_profile_id FROM device,mm WHERE device_profile_id = 'fa909e50-2204-11ef-8d93-e52196e6d77f' AND customer_id = mm.id) d), alarm AS (select count(*) alarm from alarm, mm where customer_id = mm.id), asset AS (select count(*) asset from asset, mm where customer_id = mm.id) select * from device, alarm, asset`;
       res = await pool.query(sqlQuery9);
     }
 
@@ -919,8 +923,9 @@ const getDeviceSparklineTelemetry = async (pageIdentifier, jwtTenantToken, devic
     const seconds = Math.floor(Date.now() / 1000);
     const endTs = seconds * 1000;
     const startTs = endTs - 28800000;
-    const deviceTelemetry = await axios.get(`${thingsboardHost}/api/plugins/telemetry/DEVICE/${deviceId}/values/timeseries?keys=i,v,voc,currents,simIrradiance,simTemperature,performanceFactor&startTs=${startTs}&endTs=${endTs}`, { headers });
+    const deviceTelemetry = await axios.get(`${thingsboardHost}/api/plugins/telemetry/DEVICE/${deviceId}/values/timeseries?keys=voc,isc,vmp,currents,imp,simIrradiance,simTemperature,performanceFactor&startTs=${startTs}&endTs=${endTs}`, { headers });
     let voc = deviceTelemetry.data['voc'];
+
 
     let totaldatapoints = 250;
     let extractedVotlagePoints = voc.map(voc => {
@@ -1036,8 +1041,8 @@ const getDeviceSparklineTelemetry = async (pageIdentifier, jwtTenantToken, devic
     let pop = [];
     let iop = [];
     let vop = [];
-    iop = deviceTelemetry.data.i;
-    vop = deviceTelemetry.data.v;
+    iop = deviceTelemetry.data.imp;
+    vop = deviceTelemetry.data.vmp;
     pop = iop.map((iopItem, index) => {
       const iopValue = parseFloat(iopItem.value);
       const vopValue = parseFloat(vop[index].value);
@@ -1048,16 +1053,28 @@ const getDeviceSparklineTelemetry = async (pageIdentifier, jwtTenantToken, devic
       return { ts: iopItem.ts, value: popValue };
     });
 
-    deviceTelemetry.data.isc = isc;
-    deviceTelemetry.data.pmp = pmp;
-    deviceTelemetry.data.vmp = vmp;
-    deviceTelemetry.data.imp = imp;
-    deviceTelemetry.data.ff = ff;
-    deviceTelemetry.data.pop = pop;
 
+    deviceTelemetry.data.pmpcal = pmp;
+    deviceTelemetry.data.vmpcal = vmp;
+    deviceTelemetry.data.impcal = imp;
+    deviceTelemetry.data.ff = ff;
+    deviceTelemetry.data.pmp = pop;
+    /* 
+    In the device telemetry data we have ,
+    voc open circuit voltage
+    isc short circuit current
+    ff fill factor 
+    impcal calculated imp 
+    vmpcal calculated vmp
+    pmpcal calculated pmp
+    imp operating current
+    vmp operating voltage
+    pmp operating power 
+    */
     return deviceTelemetry.data;
+
   } catch (error) {
-    console.error('3)Error creating customer:', error.message);
+    console.error('3)Error getting telemetry data for current page:', error.message);
   }
 };
 
@@ -1078,20 +1095,19 @@ const getDeviceAtrributes = async (pageIdentifier, jwtTenantToken, deviceId, voc
     //   console.log('res.rows: ',res.rows);
 
 
-    const deviceTelemetry = await axios.get(`${thingsboardHost}/api/plugins/telemetry/DEVICE/${deviceId}/values/attributes/SERVER_SCOPE?keys=model,noPanels`, { headers });
+    const deviceTelemetry = await axios.get(`${thingsboardHost}/api/plugins/telemetry/DEVICE/${deviceId}/values/attributes/SERVER_SCOPE?`, { headers });
 
     // console.log('deviceTelemetry: ', deviceTelemetry);
 
     const deviceAttributesdata = deviceTelemetry.data
-    const model = deviceAttributesdata.find(attr => attr.key === 'model').value;
-    const noPanels = deviceAttributesdata.find(attr => attr.key === 'noPanels').value;
-    const curvySimulated = await axios.get(`${thingsboardHost}/curvyval?isc=${isc}&voc=${voc}&module_series=${noPanels}&module_parallel=1&model=${model}`, { headers });
 
-    // console.log('curvySimulated.data: ', curvySimulated.data);
-
+    const userData = deviceAttributesdata.find(attr => attr.key === 'userPanelData').value;
+    const paneljsondata = JSON.stringify(userData);
+    const curvySimulated = await axios.get(`${thingsboardHost}/curvyval?isc=${isc}&voc=${voc}&panel_data=${paneljsondata}`, { headers });
     return curvySimulated.data;
+
   } catch (error) {
-    console.error('4)Error creating customer:', error.message);
+    console.error('4)Error getting simulated data', error.message);
   }
 };
 
@@ -1105,8 +1121,9 @@ const gethistoricData = async (pageIdentifier, jwtTenantToken, deviceId, epochti
     sTime = epochtime;
     // add 24 hrours to get the 1 day period 
     eTime = epochtime + 82800000;
-    const deviceTelemetry = await axios.get(`${thingsboardHost}/api/plugins/telemetry/DEVICE/${deviceId}/values/timeseries?keys=i,faultCode,v,voc,currents,simIrradiance,simTemperature,performanceFactor&startTs=${sTime}&endTs=${eTime}&limit=100000`, { headers });
-    if (deviceTelemetry.data['i'] !== undefined) {
+    const deviceTelemetry = await axios.get(`${thingsboardHost}/api/plugins/telemetry/DEVICE/${deviceId}/values/timeseries?keys=voc,isc,vmp,currents,imp,simIrradiance,simTemperature,performanceFactor&startTs=${sTime}&endTs=${eTime}&limit=100000`, { headers });
+
+    if (deviceTelemetry.data['isc'] !== undefined) {
       let voc = deviceTelemetry.data['voc'];
       let totaldatapoints = 250;
       let extractedVotlagePoints = voc.map(voc => {
@@ -1220,8 +1237,8 @@ const gethistoricData = async (pageIdentifier, jwtTenantToken, deviceId, epochti
       let pop = [];
       let iop = [];
       let vop = [];
-      iop = deviceTelemetry.data.i;
-      vop = deviceTelemetry.data.v;
+      iop = deviceTelemetry.data.imp;
+      vop = deviceTelemetry.data.vmp;
       pop = iop.map((iopItem, index) => {
         const iopValue = parseFloat(iopItem.value);
         const vopValue = parseFloat(vop[index].value);
@@ -1232,16 +1249,14 @@ const gethistoricData = async (pageIdentifier, jwtTenantToken, deviceId, epochti
         return { ts: iopItem.ts, value: popValue };
       });
 
-      deviceTelemetry.data.isc = isc;
-      deviceTelemetry.data.pmp = pmp;
-      deviceTelemetry.data.vmp = vmp;
-      deviceTelemetry.data.imp = imp;
+      deviceTelemetry.data.pmpcal = pmp;
+      deviceTelemetry.data.vmpcal = vmp;
+      deviceTelemetry.data.impcal = imp;
       deviceTelemetry.data.ff = ff;
-      deviceTelemetry.data.pop = pop;
+      deviceTelemetry.data.pmp = pop;
       deviceTelemetry.data.voltages = extractedVotlagePoints;
       deviceTelemetry.data.currents = currentPoints;
       deviceTelemetry.data.power = powerPoints;
-
     } else {
 
       deviceTelemetry.data.isc = [];
@@ -1343,7 +1358,7 @@ const assignDevice = async (deviceName, jwtTenantToken, customerId) => {
     }
     else {
 
-      if (res.rows[0].device_profile_id !== 'ac773360-10a7-11ee-8cb3-398c6452fe3e') {
+      if (res.rows[0].device_profile_id !== 'fa909e50-2204-11ef-8d93-e52196e6d77f') {
         throw new Error("Only IVcurvy device can be added");
       };
       deviceId = res.rows[0].id;
@@ -1555,22 +1570,31 @@ const setVerifyFlagStatus = async (email) => {
 const checkExists = async (email) => {
 
   console.log('email: ', email);
-  let success = null;
+  let state = null;
 
+  const sqlQuery34 = `SELECT count(*) cnt FROM public.verify_email where email = '${email}'`;
   const sqlQuery20 = `SELECT count(*) cnt FROM public.verify_email where verify = true and email = '${email}'`;
 
   try {
-    const res = await pool.query(sqlQuery20);
+    const res = await pool.query(sqlQuery34);
     console.log('res.rows: ', res.rows);
 
     if (res.rows[0].cnt === '1') {
-      success = true;
+      const res1 = await pool.query(sqlQuery20);
+      console.log('res1.rows: ', res1.rows);
+
+      if (res1.rows[0].cnt === '1') {
+        state = 0;
+      }
+      else {
+        state = 1;
+      }
     }
     else {
-      success = false;
+      state = 2;
     }
 
-    return success;
+    return state;
 
   } catch (error) {
     console.log('error: ', error);
@@ -1667,13 +1691,15 @@ const getCustomerList = async (pageIdentifier, installerCustomerId) => {
 
 const getAlarmSettings = async (deviceId) => {
 
+  //console.log({deviceId});
+
   const sqlQuery27 = `SELECT long_v FROM public.attribute_kv where entity_id = '${deviceId}' and attribute_type = 'SERVER_SCOPE' and attribute_key = 'alarmSettings'`;
   const sqlQuery28 = `select type as name, code from custom_alarm_type`;
 
   let res = null;
   let res1 = null;
-  try {
 
+  try {
     res = await pool.query(sqlQuery28);
     console.log('res.rows: ', res.rows);
     const alarmTypes = res.rows;
@@ -1761,5 +1787,145 @@ const getsimulationStatus = async (deviceId) => {
   }
 };
 
+const updatePanelAttribute = async (deviceId, panelData) => {
+  try {
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Authorization': `Bearer ${jwtTenantToken}`,
+    }
+    const json_data = {
+      userPanelData: panelData
+    };
+    const response = await axios.post(
+      `${thingsboardHost}/api/plugins/telemetry/${deviceId}/SERVER_SCOPE`,
+      json_data, // Pass JSON data as the request body
+      {
+        headers: headers,
+      }
+    );
+    return response.status;
 
-module.exports = { getJwtSysAdmin, getJwtTenant, getUserToken, getUserDeatils, getTenantEntityList, getCustomerEntityList, createCustomer, createCustomerUser, createTenant, getCustomerName, homeDetails, unassignDevice, getCustomer, editCustomer, deleteCustomer, editDeviceLable, getDeviceTelemetry, getDeviceSparklineTelemetry, getDeviceAtrributes, assignDevice, gethistoricData, scanIV, getTheUserjwtToken, saveCode, verifyEmail, checkIfCustomerExists, setVerifyFlagStatus, checkExists, saveCodePwdReset, resetPwd, updateAlarmStatus, getUniquePanelManufacturer, getCustomerList, getmodel, getpaneldata, getAlarmSettings, setAlarmSettings, getsimulationStatus };
+  } catch (error) {
+    console.error('Error updating panel in funcBE:', error.message);
+    throw error;
+  };
+};
+
+const getEmailId = async (code) => {
+  console.log('inside getEmailId');
+  try {
+    const sqlQuery33 = `SELECT email FROM public.verify_email where code = $1`;
+    const codeInteger = parseInt(code, 10);
+    const res = await pool.query(sqlQuery33, [codeInteger]);
+    console.log('sqlQuery33 res.rows: ', res.rows);
+    if (res.rows.length === 0) {
+      throw new Error('The link is invalid');
+    }
+    return res.rows[0].email;
+
+  } catch (error) {
+    //console.log('error: ', error);
+    throw error;
+  }
+};
+
+const getfaultlog = async (jwtTenantToken, deviceId, epochtime) => {
+  try {
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Authorization': `Bearer ${jwtTenantToken}`,
+    };
+
+    sTime = epochtime;
+    // add 24 hrours to get the 1 day period 
+    eTime = epochtime + 82800000;
+    const deviceTelemetry = await axios.get(`${thingsboardHost}/api/plugins/telemetry/DEVICE/${deviceId}/values/timeseries?keys=faultLog&startTs=${sTime}&endTs=${eTime}&limit=100000`, { headers });
+    return deviceTelemetry.data
+  } catch (error) {
+    console.error('5) Error getting histroicData', error.message);
+  }
+};
+
+const saveFCMToken = async (token, userId) => {
+  try {
+
+    const settings = {
+      sessions: {
+        [token]: {
+          fcmTokenTimestamp: epochTime,
+        },
+      },
+    };
+
+    const sqlQuery35 = `SELECT count(*) AS cnt FROM public.user_settings WHERE user_id = $1 AND type = 'MOBILE'`;
+    const sqlQuery36 = `INSERT INTO public.user_settings (user_id, type, settings) VALUES ($1, 'MOBILE', $2::jsonb)`;
+    const sqlQuery37 = `UPDATE public.user_settings SET settings = jsonb_set(settings, '{sessions}', settings->'sessions' || $1::jsonb) WHERE user_id = $2 AND type = 'MOBILE'`;
+
+    const res = await pool.query(sqlQuery35, [userId]);
+    //const count = parseInt(res.rows[0].cnt, 10);
+
+    console.log('res.rows[0].cnt: ', res.rows[0].cnt);
+
+    if (res.rows[0].cnt === '0') {
+      const res1 = await pool.query(sqlQuery36, [userId, JSON.stringify(settings)]);
+      console.log('sqlQuery36 res1.rows: ', res1.rows);
+      console.log('Data inserted successfully');
+    } else {
+      const res2 = await pool.query(sqlQuery37, [JSON.stringify(settings.sessions), userId]);
+      console.log('sqlQuery37 res2.rows: ', res2.rows);
+      console.log('Data updated successfully');
+    }
+
+    let success = true;
+    return success;
+
+  } catch (error) {
+    console.log('error funcBE: ', error);
+    throw error;
+  }
+};
+
+const removeToken = async (token, userId) => {
+  try {
+    let success;
+
+    const sqlQuery38 = `SELECT settings FROM public.user_settings WHERE type = 'MOBILE' AND user_id = $1`;
+    const sqlQuery39 = `UPDATE public.user_settings SET settings = $1 WHERE user_id = $2 AND type = 'MOBILE'`;
+
+    const res = await pool.query(sqlQuery38, [userId]);
+    const settingsObj = res.rows[0].settings;
+    const tokenParts = token.split(":");
+    const prefix = tokenParts.length > 1 ? tokenParts[0] : token;
+
+    // Extract sessions object
+    let sessions = settingsObj.sessions;
+
+    // Initialize an array to store keys to delete
+    let keysToDelete = [];
+
+    // Iterate over the keys of the sessions object
+    for (let key in sessions) {
+      if (key.startsWith(prefix)) {
+        keysToDelete.push(key);
+      }
+    }
+
+    // Remove matching keys from sessions object
+    keysToDelete.forEach(key => {
+      delete sessions[key];
+    });
+
+    // Convert the modified object back to JSON string
+    let updatedSettingsJson = JSON.stringify(settingsObj);
+    const res2 = await pool.query(sqlQuery39, [updatedSettingsJson, userId]);
+    success = res2.rowCount === 1;
+    return success;
+  } catch (error) {
+    console.log('error funcBE: ', error);
+    throw error;
+  }
+};
+
+
+
+module.exports = { getJwtSysAdmin, getJwtTenant, getUserToken, getUserDeatils, getTenantEntityList, getCustomerEntityList, createCustomer, createCustomerUser, createTenant, getCustomerName, homeDetails, unassignDevice, getCustomer, editCustomer, deleteCustomer, editDeviceLable, getDeviceTelemetry, getDeviceSparklineTelemetry, getDeviceAtrributes, assignDevice, gethistoricData, scanIV, getTheUserjwtToken, saveCode, verifyEmail, checkIfCustomerExists, setVerifyFlagStatus, checkExists, saveCodePwdReset, resetPwd, updateAlarmStatus, getUniquePanelManufacturer, getCustomerList, getmodel, getpaneldata, getAlarmSettings, setAlarmSettings, getsimulationStatus, updatePanelAttribute, getEmailId, saveFCMToken, getfaultlog, removeToken };

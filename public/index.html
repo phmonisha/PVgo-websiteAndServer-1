@@ -8,6 +8,7 @@
     <link rel="icon" type="image/x-icon" href="/images/logoCircular.PNG">
     <link rel="stylesheet" href="CSS/style.css">
     <link rel="stylesheet" href="CSS/responsive.css">
+        
     <style>
         body {
             height: 100vh;
@@ -105,24 +106,6 @@
             color: whitesmoke;
         }
 
-        .password-container {
-            position: relative;
-            display: inline;
-        }
-
-        .password-toggle {
-            position: absolute;
-            top: 50%;
-            right: 10px;
-            transform: translateY(-50%);
-            cursor: pointer;
-        }
-
-        .password-toggle img {
-            width: 12px;
-
-        }
-
         @media only screen and (max-width: 1431px) {
             .form {
                 width: 100%;
@@ -168,7 +151,7 @@
                     <input type="text" placeholder="Enter Email" id="username" class="inp">
                     <div class="password-container">
                         <input type="password" placeholder="Enter Password" id="password" class="inp">
-                        <span id="togglePassword" class="password-toggle" onclick="togglePasswordVisibility()"><img
+                        <span id="togglePassword" class="password-toggle" onclick="togglePasswordVisibility('password')"><img
                                 src="images/toggle_Icon.png" alt="icon"></span>
                     </div>
                     <input type="submit" value="Login" id="submit">
@@ -198,19 +181,19 @@
 
 <footer class="secondSection">
     <p class="text-footer">
-        Copyright &copy; 2027 Mega Watt Power Pty Ltd. - Allrights reserved
+        Copyright &copy; 2027 Solar Conversion Technologies Pty Ltd. - Allrights reserved
     </p>
 </footer>
 
 <div id="alertContainer"></div>
 
-<script src="js/resp.js"></script>
+<!-- <script src="js/resp.js"></script> -->
 <script type="module" src="js/onload.js"></script>
 <script type="module" src="js/login.js"></script>
 
-<script>
-        function togglePasswordVisibility() {
-            const passwordInput = document.getElementById("password");
+<!-- <script>
+        function togglePasswordVisibility(inputId) {
+            const passwordInput = document.getElementById(inputId); 
 
             if (passwordInput.type === "password") {
                 passwordInput.type = "text";
@@ -218,37 +201,10 @@
                 passwordInput.type = "password";
             }
         }
-    </script>
-
-<!-- <script>
-document.getElementById("userConcern").addEventListener("click", async () => {
-    event.preventDefault();
-    const name = document.getElementById("name_m").value;
-    const phone = document.getElementById("phone_m").value;
-    const email = document.getElementById("email_m").value;
-    const body = document.getElementById("body_m").value;
-    //alert(`Name: ${name}, Phone: ${phone}, Email: ${email}, Body: ${body}`);
-
-
-    const email_data = { name, phone, email, body };
-
-    const options = {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(email_data),
-    };
-
-    //console.log(options);
-
-    const response = await fetch("/User_Concern_Email", options);
-
-});
-
-</script> -->
-<script src="cordova.js"></script>
-<script src="js/index.js"></script>
+    </script> -->
+<!-- <script src="cordova.js"></script>
+<script src="js/index.js"></script> -->
+<script src="js/pwdToggle.js"></script>
 
 </body>
 

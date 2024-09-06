@@ -233,97 +233,102 @@
         }
 
         #joinNetwork {
-            color : white;
+            color: white;
         }
     </style>
 
 </head>
 
 <body class="background">
-<div class="outerProv">
-    <div class="headProv" style="height: 10vh;">
-        <h2 id="devName"></h2>
-    </div>
-
-<!--    <div>-->
-
-<!--        <form id="provisionWifi1" class="form">-->
-<!--            <input type="text" name="solarPanelModel" placeholder="Solar panel model" class="inp inpPlaceholder">-->
-<!--            <input type="number" name="numberOfPanel" placeholder="Number of panels" class="inp inpPlaceholder">-->
-<!--        </form>-->
-
-<!--        <p> ** Please enter your solar pannel details ** </p>-->
-<!--    </div>-->
-
-
-    <div class="semiProvUp" style="justify-content:center; height: 20vh;">
-        <div style="width: 100%;">
-            <button class="btnProv" id="scanButton" style="color:black;"><strong>Scan Wi-Fi</strong></button>
+    <div class="outerProv">
+        <div class="headProv" style="height: 10vh;">
+            <h2 id="devName"></h2>
         </div>
 
-    </div>
-    <div class="semiProvDown" style="height: 70vh;width: 100%;">
-        <div style="text-align: center; display: none;" id="correctPop">
-            <h4>Enter correct POP</h4>
-            <form id="provisionWifi2" class="form2">
-                <input type="text" name="pop" placeholder="Proof of possession" class="inp inpPlaceholder" id="pop"
-                       required>
-                <button type="button" id="provision2">Submit</button>
-                <!--                <input type="submit" value="Next" id="provision">-->
-            </form>
-        </div>
-        <div class="frame" id="frame" style="display: none;">
-            <div id="loader"></div>
-        </div>
-        <div style="text-align: center; display: none;" id="errorContainer">
-            <h3 id="errorMsg" style="color: rgba(140, 21, 21, 0.849);"></h3>
-        </div>
-        <ol class="list list-view-filter" id="wifiList"></ol>
-    </div>
+        <!--    <div>-->
 
-    <div id="popup" class="popup">
-        <div class="popup-content" style="width:57%">
-            <!-- Popup content goes here -->
-            <span class="close" id="close-popup">&times;</span>
-            <!-- <h2>Popup Title</h2> -->
-            <br>
-            <h3 id="wifiName" style="padding-bottom: 20px;">Enter Password</h3>
-            <p>Enter Wi-Fi password below to continue with provisioning.</p>
-            <br>
-            <form id="provisionWifi" class="form">
-                <input type="password" name="password" placeholder="Password" class="inp inpPlaceholder"
-                       id="wifiPassword" required>
-                <input type="submit" value="Provision" id="provision">
-            </form>
+        <!--        <form id="provisionWifi1" class="form">-->
+        <!--            <input type="text" name="solarPanelModel" placeholder="Solar panel model" class="inp inpPlaceholder">-->
+        <!--            <input type="number" name="numberOfPanel" placeholder="Number of panels" class="inp inpPlaceholder">-->
+        <!--        </form>-->
+
+        <!--        <p> ** Please enter your solar pannel details ** </p>-->
+        <!--    </div>-->
+
+
+        <div class="semiProvUp" style="justify-content:center; height: 20vh;">
+            <div style="width: 100%;">
+                <button class="btnProv" id="scanButton" style="color:black;"><strong>Scan Wi-Fi</strong></button>
+            </div>
+
         </div>
-    </div>
-
-    <div id="popup1" class="popup">
-        <div class="popup-content" style="width:57%">
-            <!-- Popup content goes here -->
-            <span class="close" id="close-popup1">&times;</span>
-            <!-- <h2>Popup Title</h2> -->
-            <br>
-            <h3>Join Other Networks</h3>
-            <br>
-            <form id="provisionWifi1" class="form">
-                <input type="name" name="SSID" placeholder="SSID" class="inp inpPlaceholder"
-                       id="wifiSSID" required>
-                <input type="password" name="password" placeholder="Password" class="inp inpPlaceholder"
-                       id="wifiPassword1" required>
-                <input type="submit" value="Provision" id="provision1">
-            </form>
+        <div class="semiProvDown" style="height: 70vh;width: 100%;">
+            <div style="text-align: center; display: none;" id="correctPop">
+                <h4>Enter correct POP</h4>
+                <form id="provisionWifi2" class="form2">
+                    <input type="text" name="pop" placeholder="Proof of possession" class="inp inpPlaceholder" id="pop"
+                        required>
+                    <button type="button" id="provision2">Submit</button>
+                    <!--                <input type="submit" value="Next" id="provision">-->
+                </form>
+            </div>
+            <div class="frame" id="frame" style="display: none;">
+                <div id="loader"></div>
+            </div>
+            <div style="text-align: center; display: none;" id="errorContainer">
+                <h3 id="errorMsg" style="color: rgba(140, 21, 21, 0.849);"></h3>
+            </div>
+            <ol class="list list-view-filter" id="wifiList"></ol>
         </div>
-    </div>
-</div>.
 
-<div id="confirmContainer"></div>
-<div id="alertContainer"></div>
+        <div id="popup" class="popup">
+            <div class="popup-content" style="width:57%">
+                <!-- Popup content goes here -->
+                <span class="close" id="close-popup">&times;</span>
+                <!-- <h2>Popup Title</h2> -->
+                <br>
+                <h3 id="wifiName" style="padding-bottom: 20px;">Enter Password</h3>
+                <p>Enter Wi-Fi password below to continue with provisioning.</p>
+                <br>
+                <form id="provisionWifi" class="form">
+                    <div class="password-container">
+                        <input type="password" name="password" placeholder="Password" id="wifiPassword" class="inp inpPlaceholder">
+                        <span id="togglePassword" class="password-toggle" onclick="togglePasswordVisibility('wifiPassword')"><img
+                                    src="images/toggle_Icon.png" alt="icon"></span>
+                    </div>
+                    <input type="submit" value="Provision" id="provision">
+                </form>
+            </div>
+        </div>
 
-<script src="../cordova.js"></script>
-<script src="../js/index.js"></script>
+        <div id="popup1" class="popup">
+            <div class="popup-content" style="width:57%">
+                <!-- Popup content goes here -->
+                <span class="close" id="close-popup1">&times;</span>
+                <!-- <h2>Popup Title</h2> -->
+                <br>
+                <h3>Join Other Networks</h3>
+                <br>
+                <form id="provisionWifi1" class="form">
+                    <input type="name" name="SSID" placeholder="SSID" class="inp inpPlaceholder" id="wifiSSID" required>
+                    <div class="password-container">
+                        <input type="password" name="password" placeholder="Password" id="wifiPassword1" class="inp inpPlaceholder" required>
+                        <span id="togglePassword" class="password-toggle" onclick="togglePasswordVisibility('wifiPassword1')"><img
+                            src="../images/toggle_Icon.png" alt="icon"></span>
+                    </div>
+                    <input type="submit" value="Provision" id="provision1">
+                </form>
+            </div>
+        </div>
+    </div>.
 
-<script>
+    <div id="confirmContainer"></div>
+    <div id="alertContainer"></div>
+
+    <script src="../cordova.js"></script>
+    <script src="../js/index.js"></script>
+
+    <script>
         // JavaScript to show the popup
         // document.getElementById("open-popup").addEventListener("click", function () {
         //    document.getElementById("popup").style.display = "block";
@@ -335,13 +340,14 @@
             document.getElementById("popup").style.display = "none";
         });
 
-         document.getElementById("close-popup1").addEventListener("click", function () {
+        document.getElementById("close-popup1").addEventListener("click", function () {
 
             document.getElementById("popup1").style.display = "none";
         });
 
     </script>
-<script type="module" src="../js/wifiList.js"></script>
+    <script type="module" src="../js/wifiList.js"></script>
+    <script src="../js/pwdToggle.js"></script>
 
 </body>
 

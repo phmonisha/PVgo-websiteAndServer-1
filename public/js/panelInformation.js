@@ -23,11 +23,9 @@ const kireal = document.getElementById("realki");
 const kvpercent = document.getElementById('percentkv');
 const kvreal = document.getElementById('realkv');
 const inputTechnology = document.getElementById('myInput-technology');
-
+let responseStatus;
+let existinpanelData;
 document.addEventListener("DOMContentLoaded", async () => {
-
-    console.log(localStorage.getItem('panelDeviceId'));
-
     const bodyElement = document.querySelector('body');
     const pageIdentifier = bodyElement.classList.contains('page-identifier')
         ? bodyElement.getAttribute('data-page')
@@ -219,6 +217,26 @@ document.addEventListener("DOMContentLoaded", async () => {
         };
     };
 
+    // get any existing user panel data
+    const getUserData = { deviceID: localStorage.getItem('panelDeviceId') };
+    const optiongetUserData = {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(getUserData),
+    };
+    const responseData = await fetch("/getsimulationStatus", optiongetUserData);
+    const responseDataJson = await responseData.json();
+
+    for (let item of responseDataJson) {
+        if (item.key === "userPanelData") {
+            existinpanelData = responseDataJson.find(item => item.key === "userPanelData").value;
+            setexistingpanel();
+        }
+    }
+
     document.getElementById('submit-panelinfo-btn').addEventListener('click', function () {
         const requiredInputs = [
             { input: inputFieldManu, labelFor: 'myInput-manu' },
@@ -285,9 +303,30 @@ document.addEventListener("DOMContentLoaded", async () => {
             };
 
             panelData.techValue = inputTechnology.value;
+            console.log(panelData);
+            try {
+                const dataPanelInfo = { deviceID: localStorage.getItem('panelDeviceId'), panelData };
+                const dataPanelInfoOption = {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(dataPanelInfo),
+                };
+                const responseGetParam = fetch("/updatePanelAttribute", dataPanelInfoOption)
+                    .then(response => {
+                        responseStatus = response.status;
+                        if (responseStatus === 200) {
+                            const alertDiv = createAlert("Panel Information Sucessfully Updated");
+                            alertContainer.appendChild(alertDiv);
+                        };
+                    })
+            } catch (error) {
+                const alertDiv = createAlert("Something went wrong.Try again");
+                alertContainer.appendChild(alertDiv);
+            }
 
-            console.log(panelData)
-            console.log("Continue the action here after the above code is executed");
         };
     });
 });
@@ -341,4 +380,25 @@ function editable() {
     kireal.disabled = false;
     kvpercent.disabled = false;
     kvreal.disabled = false;
+};
+
+function setexistingpanel() {
+    inputFieldManu.value = existinpanelData['manuValue'];
+    inputFieldModel.value = existinpanelData['modelValue'];
+    inputPower.value = existinpanelData['powerValue'];
+    inputCells.value = existinpanelData['cellsValue'];
+    inputVoc.value = existinpanelData['vocValue'];
+    inputIsc.value = existinpanelData['iscValue'];
+    inputVmp.value = existinpanelData['vmpValue'];
+    inputImp.value = existinpanelData['impValue'];
+    inputKv.value = existinpanelData['kvValue'];
+    inputKi.value = existinpanelData['kiValue'];
+    inputTechnology.value = existinpanelData['Si mono'];
+    inputPanelSeries.value = existinpanelData['seriesValue'];
+    inputStringParallel.value = existinpanelData['parallelValue'];
+    kipercent.checked = true;
+    kvpercent.checked = true;
+    if (inputFieldModel.value != 'Custom Panel') {
+        readOnly();
+    };
 };

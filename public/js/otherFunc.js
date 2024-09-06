@@ -15,7 +15,6 @@ export async function unassignCustomerDevice(deviceId) {
 
         if (resp.ok) {
             const deviceData = await resp.json();
-            console.log({ deviceData });
             // You can access specific properties of deviceData if needed
             const alertDiv = createAlert("Device deleted successfully");
             alertContainer.appendChild(alertDiv);
@@ -104,7 +103,6 @@ export async function updateAlarm(id, btn){
 
         if (resp.ok) {
             const status = await resp.json();
-            console.log({ status });
             return status.alarmStatus;
         } else {
             return false;
@@ -164,7 +162,6 @@ export async function deleteCustomer(customerId) {
 
         if (resp.ok) {
             const customerData = await resp.json();
-            console.log({ customerData });
             // You can access specific properties of customerData if needed
             const alertDiv = createAlert("Customer successfully deleted");
             alertContainer.appendChild(alertDiv);
@@ -189,7 +186,6 @@ export function setToken(token) {
 };
 
 export function getToken() {
-    console.log(localStorage.getItem('token'));
     return localStorage.getItem('token');
 };
 
@@ -222,12 +218,10 @@ export function convertEpochToAEST(epochTimeInput) {
 }
 
 export function setCustomerId(customerId) {
-    console.log('set customerId:', customerId);
     localStorage.setItem('customerId', customerId);
 };
 
 export function getCustomerId() {
-    console.log(localStorage.getItem('customerId'));
     return localStorage.getItem('customerId');
 };
 
@@ -236,12 +230,10 @@ export function removeCustomerId() {
 };
 
 export function setTenantId(tenantId) {
-    console.log('set tenantId:', tenantId);
     localStorage.setItem('tenantId', tenantId);
 };
 
 export function getTenantId() {
-    console.log(localStorage.getItem('tenantId'));
     return localStorage.getItem('tenantId');
 };
 
@@ -251,11 +243,9 @@ export function removeTenantId() {
 
 export function setqrOutput(qrOutput) {
     localStorage.setItem('qrOutput', qrOutput);
-    console.log('qrOutput have been set SUCCESSFULLY using setqrOutput(qrOutput)');
 };
 
 export function getqrOutput() {
-    console.log(localStorage.getItem('qrOutput'));
     return localStorage.getItem('qrOutput');
 };
 
@@ -265,11 +255,9 @@ export function removeqrOutput() {
 
 export function setMAC(MAC) {
     localStorage.setItem('MAC', MAC);
-    console.log('MAC have been set SUCCESSFULLY using setqrOutput(MAC)');
 };
 
 export function getMAC() {
-    console.log(localStorage.getItem('MAC'));
     return localStorage.getItem('MAC');
 };
 
@@ -282,7 +270,6 @@ export function setFormData(formData) {
 };
 
 export function getFormData() {
-    console.log(localStorage.getItem('formData'));
     return localStorage.getItem('formData');
 };
 

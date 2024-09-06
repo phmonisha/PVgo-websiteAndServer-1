@@ -75,6 +75,12 @@
             justify-content: center;
         }
 
+        .flexDateFault {
+            display: flex;
+            align-items: center;
+            justify-content: left;
+        }
+
         .mergGrid3 {
             grid-column: 1;
             grid-row: 1/span 2;
@@ -139,6 +145,37 @@
 
         .dropdown-content a:hover {
             background-color: #f1f1f1;
+        }
+
+        #faultdatepicker {
+            width: 120px;
+            padding: 5px;
+        }
+
+        #faultTab {
+            display: none;
+        }
+
+        .rotate180 {
+            transform: rotate(180deg);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: left;
+            word-wrap: break-word;
+        }
+
+        th {
+            background-color: #000000;
         }
     </style>
 </head>
@@ -239,6 +276,8 @@
                 <!-- <h1>Customer Dashboards</h1> -->
                 <button class="tablinks" onclick="openTab(event, 'Current')" id="defaultOpen">Current</button>
                 <button class="tablinks" onclick="openTab(event, 'Historic')" id="HistoricTab">Historic</button>
+                <button class="tablinks" onclick="openTab(event, 'FaultAnalysis')" id="faultTab">Fault
+                    Analysis</button>
                 <!-- <button class="tablinks" onclick="openTab(event, 'Heat Map')">Heat Map</button> -->
                 <!-- <button class="tablinks" onclick="openTab(event, 'energy-performance')">Energy Performance</button> -->
 
@@ -273,6 +312,8 @@
                         <div class="label-curve">
                             <label for="toggleSecondaryAxis">P-V curve:</label>
                             <input type="checkbox" id="toggleSecondaryAxis" style="width: 13px;">
+                            <p id="ml-prediction"></p>
+                            <button class="report-button" id="sendButton">Report Prediction</button>
                         </div>
                     </div>
                     <div class="card-data">
@@ -469,6 +510,17 @@
                 <div class="container-historic-graph">
                     <div id="parameter-graph"></div>
                 </div>
+            </div>
+            <div id="FaultAnalysis" class="tabcontent">
+                <div class="flexDateFault">
+                    <p id="label-faultdate">Date:&nbsp;&nbsp;</p>
+                    <button id="datefault-backward" class="datebuttons"><img width="15" height="15"
+                            src="https://img.icons8.com/metro/26/back.png" alt="back" /></button>
+                    &nbsp;<input type="date" id="faultdatepicker" placeholder="yyyy/mm/dd">&nbsp;
+                    <button id="datefault-forward" class="datebuttons"><img class="rotate180" width="15" height="15"
+                            src="https://img.icons8.com/metro/26/back.png" alt="back" /></button>
+                </div>
+                <div id="fault-table"></div>
             </div>
         </div>
     </section>

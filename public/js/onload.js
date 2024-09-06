@@ -14,8 +14,6 @@ document.addEventListener("DOMContentLoaded", async (event) => {
         body: JSON.stringify(data),
     };
 
-    //console.log(options);
-
     const response = await fetch("/onLoad", options);
 
 
@@ -38,5 +36,4 @@ document.addEventListener("DOMContentLoaded", async (event) => {
         console.error("Server request failed:", response.status);
         // Handle the error
     }
-
 });

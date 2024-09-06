@@ -133,7 +133,11 @@
 
             <input type="text" name="title" placeholder="Name*" class="inp" id="titleVerify">
             <input type="email" name="email" placeholder="Email Id*" class="inp">
-            <input type="password" name="password" placeholder="Create Password*" class="inp">
+            <div class="password-container">
+                <input type="password" name="password" placeholder="Create Password*" id="Password" class="inp">
+                <span id="togglePassword" class="password-toggle" onclick="togglePasswordVisibility('Password')"><img
+                    src="../images/toggle_Icon.png" alt="icon"></span>
+            </div>
             <input type="password" name="confirmPassword" placeholder="Confirm Password*" class="inp">
 
             <div id="radio-container">
@@ -158,6 +162,7 @@
 <div id="alertContainer"></div>
 
 <script type="module" src="../js/setSignUp.js"></script>
+<script src="../js/pwdToggle.js"></script>
 
 </body>
 

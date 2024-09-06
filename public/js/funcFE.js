@@ -165,7 +165,7 @@ document.addEventListener("DOMContentLoaded", async (event) => {
                 'acknowledged': i.acknowledged,
                 'cleared': i.cleared,
                 'id': i.id,
-                'deviceId':i.deviceId
+                'deviceId': i.deviceId
             });
         }
     }
@@ -252,10 +252,25 @@ document.addEventListener("DOMContentLoaded", async (event) => {
         }
         else if (pageIdentifier === 'customerAlarm') {
             const searchText = searchInput.value.toLowerCase();
-            filteredData = searchText === ''
-                ? data
-                : data.filter(item => item.label.toLowerCase().includes(searchText));
+            const alarmFilterJson = JSON.parse(localStorage.getItem('alarmFilterJson'));
+        
+            filteredData = data.filter(item => {
+                // Check if the item matches the text search criteria
+                const matchesTextSearch = item.label.toLowerCase().includes(searchText);
+        
+                // Apply the appropriate filter based on the existence of alarmFilterJson
+                const matchesAlarmFilter = alarmFilterJson
+                    ? ((alarmFilterJson.clr && item.cleared) ||
+                       (alarmFilterJson.act && !item.cleared) ||
+                       (alarmFilterJson.ack && item.acknowledged) ||
+                       (alarmFilterJson.unack && !item.acknowledged))
+                    : !item.cleared; // If alarmFilterJson doesn't exist, match items where item.cleared === false
+        
+                // Return true if both conditions are satisfied
+                return matchesTextSearch && matchesAlarmFilter;
+            });
         }
+        
         else if (pageIdentifier === 'customerDevice') {
             const searchText = searchInput.value.toLowerCase();
             filteredData = searchText === ''
@@ -405,46 +420,8 @@ document.addEventListener("DOMContentLoaded", async (event) => {
                 });
             }
             else if (pageIdentifier === 'customerAlarm') {
-                const alarmFilterJson = JSON.parse(localStorage.getItem('alarmFilterJson'));
                 currentPageData.forEach((item) => {
-                    if (alarmFilterJson) {
-                        if ((alarmFilterJson.clr && item.cleared) ||
-                            (alarmFilterJson.act && !item.cleared) ||
-                            (alarmFilterJson.ack && item.acknowledged) ||
-                            (alarmFilterJson.unack && !item.acknowledged)) {
-                            const row = document.createElement('li');
-                            row.innerHTML = `<div class="grid-container"> <div class="grid-item left-allign text-bigger">${item.label}</div> <div class="grid-item right-allign name-length">${item.createdtime}</div> <div class="grid-item left-allign">${item.type}</div> <div class="grid-item right-allign">${item.severity}</div> <div class="grid-item msg"> <div class="sub_msg">${item.definition}</div> </div> </div> <br> <div class="grid-container"> <div class="grid-item left-allign text-bigger">${item.status}</div> <div class="grid-item right-allign"> ${!item.acknowledged ? `<button class="btn-alarm acknowledge-btn">Acknowledge</button>` : ''} ${!item.cleared ? `<button class="btn-alarm clear-btn">Clear</button>` : ''} </div> </div>`;
-
-                            const acknowledgeBtn = row.querySelector('.acknowledge-btn');
-                            if (acknowledgeBtn) {
-                                acknowledgeBtn.addEventListener('click', async (event) => {
-                                    event.stopPropagation();
-                                    const status1 = await updateAlarm(item.id, 'ack');
-                                    console.log('status1: ', status1);
-                                    if (status1 === true) {
-                                        acknowledgeBtn.parentNode.removeChild(acknowledgeBtn);
-                                    }
-                                    else {
-                                        alert('errror while acknowledging alarm');
-                                    }
-                                });
-                            }
-
-                            // Add event listener for Clear button
-                            const clearBtn = row.querySelector('.clear-btn');
-                            if (clearBtn) {
-                                clearBtn.addEventListener('click', async () => {
-                                    const status2 = await updateAlarm(item.id, 'clr');
-                                    if (status2 === true) {
-                                        row.parentNode.removeChild(row);
-                                    }
-                                });
-                            }
-                            tableBody.appendChild(row);
-                        }
-                    }
-                    else if (!item.cleared) {
-                        const row = document.createElement('li');
+                    const row = document.createElement('li');
                         row.innerHTML = `<div class="grid-container"> <div class="grid-item left-allign text-bigger">${item.label}</div> <div class="grid-item right-allign name-length">${item.createdtime}</div> <div class="grid-item left-allign">${item.type}</div> <div class="grid-item right-allign">${item.severity}</div> <div class="grid-item msg"> <div class="sub_msg">${item.definition}</div> </div> </div> <br> <div class="grid-container"> <div class="grid-item left-allign text-bigger">${item.status}</div> <div class="grid-item right-allign"> ${!item.acknowledged ? `<button class="btn-alarm acknowledge-btn">Acknowledge</button>` : ''} ${!item.cleared ? `<button class="btn-alarm clear-btn">Clear</button>` : ''} </div> </div>`;
 
                         const acknowledgeBtn = row.querySelector('.acknowledge-btn');
@@ -473,7 +450,6 @@ document.addEventListener("DOMContentLoaded", async (event) => {
                             });
                         }
                         tableBody.appendChild(row);
-                    }
                 });
             }
             else if (pageIdentifier === 'customerDevice') {

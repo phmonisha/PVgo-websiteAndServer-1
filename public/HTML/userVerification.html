@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<title>Reset Password</title>
+<link rel="icon" type="image/x-icon" href="/images/logoCircular.PNG">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css"> -->
+<link rel="stylesheet" href="/CSS/tablink.css">
+<link rel="stylesheet" href="/CSS/style.css">
+<script type="module" src="../js/userSetPwd.js"></script>
+
+<style>
+    .inp {
+        display: block;
+        margin: 10px auto;
+        border-radius: 20px;
+        border: none;
+        width: 100%;
+        height: 25px;
+        text-align: center;
+    }
+
+    .submit {
+        display: block;
+        margin: auto;
+        border-radius: 20px;
+        border: none;
+        width: 100%;
+        height: 25px;
+        background-color: #8BC63F;
+        color: rgba(37, 11, 11, 0.849);
+    }
+
+    label {
+        color: whitesmoke;
+        text-transform: none !important;
+    }
+
+    .disp {
+        display: none;
+    }
+
+    #London {
+        height: 100vh;
+        color: whitesmoke;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .form {
+        height: 245px !important;
+        padding-bottom: none;
+        padding-top: 20px;
+    }
+
+    .content {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .margin-css {
+        margin: 35px;
+    }
+
+    .text-small a {
+        color: whitesmoke;
+    }
+
+    @media only screen and (max-width: 1431px) {
+        .form {
+            width: 20%;
+        }
+
+        .w3-bar {
+            width: 30%;
+        }
+    }
+
+    @media only screen and (max-width: 1150px) {
+        .form {
+            width: 20%;
+        }
+
+        .w3-bar {
+            width: 30%;
+        }
+    }
+
+    @media only screen and (max-width: 967px) {
+        .form {
+            width: 40%;
+        }
+
+        .w3-bar {
+            width: 50%;
+        }
+    }
+
+    @media only screen and (max-width: 540px) {
+        .form {
+            width: 70%;
+        }
+
+        .w3-bar {
+            width: 80%;
+        }
+    }
+
+    @media only screen and (max-width: 490px) {
+        .form {
+            width: 76%;
+        }
+
+        .w3-bar {
+            width: 80%;
+        }
+    }
+</style>
+
+<body class="background">
+
+    <!-- <div class="w3-container">
+    <h2>Tabs</h2>
+    <p>Tabs are perfect for single page web applications, or for web pages capable of displaying different subjects.
+        Click on the links below.</p>
+</div> -->
+
+    <!-- <div class="w3-bar">
+    <button class="w3-button w3-button-L" onclick="openCity('London')">Installer</button>
+    <button class="w3-button w3-button-R" onclick="openCity('Paris')">Customer</button>
+</div> -->
+
+    <div id="London">
+        <div class="content">
+
+            <p style="font-size: 25px; color: #8BC63F" class="allign" id="verifyStatus"></p>
+            <br><br>
+            <p class="text-big allign">Set Password</p>
+            <p class="text-small allign margin-css" id="verifyEmailNotif">Please set a password for login.</p>
+            <form id="signinInstaller" class="form">
+
+                <div class="password-container">
+                    <input type="password" name="password" placeholder="New Password*" id="pwd" class="inp">
+                    <span id="togglePassword" class="password-toggle" onclick="togglePasswordVisibility('pwd')"><img
+                        src="../images/toggle_Icon.png" alt="icon"></span>
+                </div>
+
+                <input type="password" name="confirmPassword" placeholder="Confirm Password*" class="inp" id="conf_pwd">
+
+                <input type="submit" value="Submit" class="submit" id="setPwd">
+            </form>
+
+            <p class="text-small allign" id="resendVerification"><a href="#"></a></p>
+
+        </div>
+    </div>
+
+    <div id="alertContainer"></div>
+    <script src="../js/pwdToggle.js"></script>
+
+
+</body>
+
+</html>

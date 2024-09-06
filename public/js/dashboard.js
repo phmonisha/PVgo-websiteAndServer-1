@@ -14,7 +14,7 @@ let deviceListArray = [];
 let tabStatus = 'current';
 let webSocket;
 let simulationStatus;
-
+let lastUpdatedTime;
 
 document.getElementById('defaultOpen').addEventListener('click', () => {
     tabStatus = 'current';
@@ -24,7 +24,9 @@ document.getElementById('HistoricTab').addEventListener('click', () => {
     tabStatus = 'historic';
 });
 
-
+document.getElementById('faultTab').addEventListener('click', () => {
+    tabStatus = 'fault';
+});
 
 document.addEventListener("DOMContentLoaded", async (event) => {
     loading();
@@ -102,12 +104,16 @@ document.addEventListener("DOMContentLoaded", async (event) => {
 
             if (tabStatus === 'historic') {
                 performHistoricActionsWithDeviceID();
-            } else {
+                getsparklineCurve();
+            } else if ((tabStatus === 'current')) {
                 loading();
                 getsimulationstatus();
                 performActionsWithDeviceID();
+                getsparklineCurve();
+            } else {
+                getfaultdata();
             };
-            getsparklineCurve();
+
         };
     });
     // Get the checkbox element and if it is already checked, pass a status code 1 to plot both IV and PV curve. If not checked pass status code 0..
@@ -128,13 +134,13 @@ document.addEventListener("DOMContentLoaded", async (event) => {
         //  Extract the current points and format it correctly
         for (let i = 0; i < totalDataPoint; i++) {
             // let roundedValue = (current[i] / 1000).toFixed(2);
-            let roundedValue = Math.round((current[i] / 1000) * 100) / 100;
+            let roundedValue = (current[i] / 1000);
             formattedCurrent.push(roundedValue);
         };
 
         // Extract the power points and format it correctly
         for (let i = 0; i < totalDataPoint; i++) {
-            formattedPower.push(Math.round(formattedCurrent[i] * formattedVoltages[i]));
+            formattedPower.push(formattedCurrent[i] * formattedVoltages[i]);
         };
 
         // if check box is checked, create a checkbox status and save it  to session storage. call the createIVchart function and pass the correct values.
@@ -223,7 +229,7 @@ let sliderValue = null;
 let arrayLength = null;
 let maxcount = 0;
 let mincount = 0;
-
+let predictionText;
 
 document.getElementById('defaultOpen').addEventListener('click', () => {
     tabStatus = 'current';
@@ -255,7 +261,7 @@ document.getElementById("date-forward").addEventListener("click", function () {
     maxcount = 0;
     mincount = 0;
     let currentDate = new Date(datepicker.value);
-    // Subtract one day from the current date
+    // add one day from the current date
     currentDate.setDate(currentDate.getDate() + 1);
     // Set the new date value in the datepicker
     datepicker.valueAsDate = currentDate;
@@ -324,7 +330,6 @@ async function performHistoricActionsWithDeviceID() {
                 return;  // Stop execution if the date is invalid
             } else {
                 historicepochTime = selectedDateTime.getTime();
-                // console.log({ historicepochTime })
             }
         } else {
             nohistoricdata();
@@ -345,6 +350,56 @@ async function performHistoricActionsWithDeviceID() {
         // await clearOldDataAndGraphs();
         const responseData = await fetch("/historicDData", historicDataOptions);
         jsonData = await responseData.json();
+
+        if (simulationStatus === true && jsonData['performanceFactor'] && jsonData['performanceFactor'].length !== jsonData['isc'].length) {
+
+            // Create a map of timestamps in performanceFactor for quick lookup
+            const performanceFactorMap = {};
+            jsonData['performanceFactor'].forEach(item => {
+                performanceFactorMap[item.ts] = item;
+            });
+
+            let adjustedPerformanceFactor;
+            // Map over isc and ensure all timestamps exist in performanceFactor
+            adjustedPerformanceFactor = jsonData['isc'].map(item => ({
+                ts: item.ts,
+                value: performanceFactorMap[item.ts] ? performanceFactorMap[item.ts].value : '0'
+            }));
+            // Update jsonData with adjusted performanceFactor
+            jsonData.performanceFactor = adjustedPerformanceFactor;
+
+
+            // Create a map of timestamps in irr for quick lookup
+            const irrdMap = {};
+            let adjustedirradiance;
+            jsonData['simIrradiance'].forEach(item => {
+                irrdMap[item.ts] = item;
+            });
+
+            // Map over isc and ensure all timestamps exist in irr
+            adjustedirradiance = jsonData['isc'].map(item => ({
+                ts: item.ts,
+                value: irrdMap[item.ts] ? irrdMap[item.ts].value : '0'
+            }));
+            // Update jsonData with adjusted irr
+            jsonData.simIrradiance = adjustedirradiance;
+
+            // Create a map of timestamps in irr for quick lookup
+            const tempMap = {};
+            let adjustedtemp;
+            jsonData['simTemperature'].forEach(item => {
+                tempMap[item.ts] = item;
+            });
+
+            // Map over isc and ensure all timestamps exist in irr
+            adjustedtemp = jsonData['isc'].map(item => ({
+                ts: item.ts,
+                value: tempMap[item.ts] ? tempMap[item.ts].value : '0'
+            }));
+            // Update jsonData with adjusted irr
+            jsonData.simTemperature = adjustedtemp;
+        }
+
 
         const togglePosition = document.querySelector('.toggle-checkbox');
         if (togglePosition === null) {
@@ -369,8 +424,6 @@ async function performHistoricActionsWithDeviceID() {
                 createParameterChart(jsonData, "parameter-graph");
             };
         };
-
-
         if (jsonData["voc"].length === 0) {
             nohistoricdata();
             return;
@@ -389,26 +442,27 @@ async function performHistoricActionsWithDeviceID() {
 };
 
 function updateUI(indexValue) {
+
     historicTs = jsonData['voc'][indexValue].ts
 
     // VOLTAGE AT MAXIMUM POWER POINT DATA
-    historicVmpData = jsonData['vmp'][indexValue].value;
-    createHistoricSparklineImage(jsonData['vmp'], 'sparkline-image-historical-vmp', `${jsonData['vmp'][indexValue].value} V`, jsonData['vmp'][indexValue].value, historicTs);
+    historicVmpData = jsonData['vmpcal'][indexValue].value;
+    createHistoricSparklineImage(jsonData['vmpcal'], 'sparkline-image-historical-vmp', `${jsonData['vmpcal'][indexValue].value} V`, jsonData['vmpcal'][indexValue].value, historicTs);
 
     // CURRENT AT MAXIMUM POWER POINT DATA
-    createHistoricSparklineImage(jsonData['imp'], 'sparkline-image-historical-imp', `${jsonData['imp'][indexValue].value} A`, jsonData['imp'][indexValue].value, historicTs);
+    createHistoricSparklineImage(jsonData['impcal'], 'sparkline-image-historical-imp', `${jsonData['impcal'][indexValue].value} A`, jsonData['impcal'][indexValue].value, historicTs);
 
     // POWER AT MAXIMUM POWER POINT DATA
-    createHistoricSparklineImage(jsonData['pmp'], 'sparkline-image-historical-pmp', `${jsonData['pmp'][indexValue].value} W`, jsonData['pmp'][indexValue].value, historicTs);
+    createHistoricSparklineImage(jsonData['pmpcal'], 'sparkline-image-historical-pmp', `${jsonData['pmpcal'][indexValue].value} W`, jsonData['pmpcal'][indexValue].value, historicTs);
 
     // OPERATING VOLTAGE DATA
-    createHistoricSparklineImage(jsonData['v'], 'sparkline-image-historical-vop', `${jsonData['v'][indexValue].value} V`, jsonData['v'][indexValue].value, historicTs);
+    createHistoricSparklineImage(jsonData['vmp'], 'sparkline-image-historical-vop', `${jsonData['vmp'][indexValue].value} V`, jsonData['vmp'][indexValue].value, historicTs);
 
     // OPERATING CURRENT DATA
-    createHistoricSparklineImage(jsonData['i'], 'sparkline-image-historical-iop', `${jsonData['i'][indexValue].value} A`, jsonData['i'][indexValue].value, historicTs);
+    createHistoricSparklineImage(jsonData['imp'], 'sparkline-image-historical-iop', `${jsonData['imp'][indexValue].value} A`, jsonData['imp'][indexValue].value, historicTs);
 
     // OPERATING POWER DATA
-    createHistoricSparklineImage(jsonData['pop'], 'sparkline-image-historical-pop', `${jsonData['pop'][indexValue].value} W`, jsonData['pop'][indexValue].value, historicTs);
+    createHistoricSparklineImage(jsonData['pmp'], 'sparkline-image-historical-pop', `${jsonData['pmp'][indexValue].value} W`, jsonData['pmp'][indexValue].value, historicTs);
 
     // OPEN CIRCUIT VOLTAGE DATA
     createHistoricSparklineImage(jsonData['voc'], 'sparkline-image-historical-voc', `${jsonData['voc'][indexValue].value} V`, jsonData['voc'][indexValue].value, historicTs);
@@ -420,21 +474,21 @@ function updateUI(indexValue) {
     createHistoricSparklineImage(jsonData['ff'], 'sparkline-image-historical-ff', `${jsonData['ff'][indexValue].value}`, jsonData['ff'][indexValue].value, historicTs);
 
     // Tcell DATA
-    if (simulationStatus === true) {
+    if (simulationStatus === true && jsonData['simTemperature']) {
         createHistoricSparklineImage(jsonData['simTemperature'], 'sparkline-image-historical-tcell', `${jsonData['simTemperature'][indexValue].value}°C`, jsonData['simTemperature'][indexValue].value, historicTs);
     } else {
         createzerosparkline('sparkline-image-historical-tcell')
     }
 
     // GEFF DATA
-    if (simulationStatus === true) {
+    if (simulationStatus === true && jsonData['simIrradiance']) {
         createHistoricSparklineImage(jsonData['simIrradiance'], 'sparkline-image-historical-Geff', `${jsonData['simIrradiance'][indexValue].value}W/m²`, jsonData['simIrradiance'][indexValue].value, historicTs);
     } else {
         createzerosparkline('sparkline-image-historical-Geff')
     }
 
     // PF DATA
-    if (simulationStatus === true) {
+    if (simulationStatus === true && jsonData['performanceFactor']) {
         createHistoricSparklineImage(jsonData['performanceFactor'], 'sparkline-image-historical-pf', `${jsonData['performanceFactor'][indexValue].value}%`, jsonData['performanceFactor'][indexValue].value, historicTs);
     } else {
         createzerosparkline('sparkline-image-historical-pf')
@@ -459,12 +513,12 @@ function updateUI(indexValue) {
         fixYaxisStatus = 1;
         createhistoricIVchart(historiccurrent,
             historicvoltages,
+            [jsonData['vmpcal'][indexValue].value],
+            [jsonData['impcal'][indexValue].value],
+            [jsonData['pmpcal'][indexValue].value],
             [jsonData['vmp'][indexValue].value],
             [jsonData['imp'][indexValue].value],
             [jsonData['pmp'][indexValue].value],
-            [jsonData['v'][indexValue].value],
-            [jsonData['i'][indexValue].value],
-            [jsonData['pop'][indexValue].value],
             historicPower,
             'historicChartCurvy',
             maxY1Axis, maxY2Axis, fixYaxisStatus
@@ -473,12 +527,12 @@ function updateUI(indexValue) {
     } else {
         createhistoricIVchart(historiccurrent,
             historicvoltages,
+            [jsonData['vmpcal'][indexValue].value],
+            [jsonData['impcal'][indexValue].value],
+            [jsonData['pmpcal'][indexValue].value],
             [jsonData['vmp'][indexValue].value],
             [jsonData['imp'][indexValue].value],
             [jsonData['pmp'][indexValue].value],
-            [jsonData['v'][indexValue].value],
-            [jsonData['i'][indexValue].value],
-            [jsonData['pop'][indexValue].value],
             historicPower,
             'historicChartCurvy',
         );
@@ -608,7 +662,7 @@ async function performActionsWithDeviceID() {
         let currentAtMaxPoint = 0;
         let checkboxstatuscode = 0;
         let parsed_data = JSON.parse(received_msg);
-        let lastUpdatedTime;
+        let prediction;
         let fillfactor = 0;
         let cellTemperature = 0;
         let simIrradiance = 0;
@@ -619,9 +673,15 @@ async function performActionsWithDeviceID() {
         let rssi = 0;
         let rssi_lastupdate = 0;
         let lasttime = 0;
+        let formattedInstantVoltage = 0;
+        let formattedInstantcurrent = 0;
+        let formattedInstantpower = 0;
+        let formattedpowerAtMaxPoint = 0;
+        let formattedvoltageAtMaxPoint = 0;
         const resultElement = document.getElementById('resultScanCurvy');
         let difflast;
         // Check if the currents is part of the new called websocket, if yes save it in the session cache.
+        // console.log(received_msg)
         const data = parsed_data.data;
         if (Object.keys(data).length === 0 && data.constructor === Object) {
             document.getElementById('wifistrength').setAttribute('src', '../images/wi-fi-disconnected.png');
@@ -728,14 +788,27 @@ async function performActionsWithDeviceID() {
                 sessionStorage.setItem('pf', 0);
             }
 
-
-            if (parsed_data.data && parsed_data.data.iSlow && parsed_data.data.iSlow.length > 0) {
-                sessionStorage.setItem('iop', parsed_data.data.iSlow[0][1]);
+            if (parsed_data.data && parsed_data.data.predictionCurve && parsed_data.data.predictionCurve.length > 0) {
+                sessionStorage.setItem('prediction', parsed_data.data.predictionCurve[0][1]);
+                sessionStorage.setItem('curveTs', parsed_data.data.predictionCurve[0][0]);
             }
 
-            if (parsed_data.data && parsed_data.data.vSlow && parsed_data.data.vSlow.length > 0) {
-                sessionStorage.setItem('vop', parsed_data.data.vSlow[0][1]);
+            if (parsed_data.data && parsed_data.data.iPv && parsed_data.data.iPv.length > 0) {
+                sessionStorage.setItem('iinst', parsed_data.data.iPv[0][1]);
             }
+
+            if (parsed_data.data && parsed_data.data.vPv && parsed_data.data.vPv.length > 0) {
+                sessionStorage.setItem('vinst', parsed_data.data.vPv[0][1]);
+            }
+
+            if (parsed_data.data && parsed_data.data.imp && parsed_data.data.imp.length > 0) {
+                sessionStorage.setItem('iop', parsed_data.data.imp[0][1]);
+            }
+
+            if (parsed_data.data && parsed_data.data.vmp && parsed_data.data.vmp.length > 0) {
+                sessionStorage.setItem('vop', parsed_data.data.vmp[0][1]);
+            }
+
             // get cuurent values from the session cache.
             current = JSON.parse(sessionStorage.getItem('currentPoints'));
 
@@ -744,7 +817,7 @@ async function performActionsWithDeviceID() {
             //  extract the current data point
             for (let i = 0; i < totalDataPoint; i++) {
                 // let roundedValue = (current[i] / 1000).toFixed(2);
-                let roundedValue = Math.round((current[i] / 1000) * 100) / 100;
+                let roundedValue = current[i] / 1000;
                 formattedCurrent.push(roundedValue);
             };
 
@@ -759,18 +832,39 @@ async function performActionsWithDeviceID() {
             // extract the voltage data point
             voltagepoints = divideIntoPoints(formattedVoc, totalDataPoint)
             sessionStorage.setItem("voltagepoints", JSON.stringify(voltagepoints));
+            // get the prediction value
+            prediction = sessionStorage.getItem("prediction");
+            predictionText = document.getElementById("ml-prediction");
+            switch (prediction) {
+                case "0":
+                    predictionText.innerText = "Predition: Good curve";
+                    break;
+                case "1":
+                    predictionText.innerText = "Prediction: Degradaiton due to series resistance has been detected";
+                    break;
+                case "2":
+                    predictionText.innerText = "Prediction: Degradaiton due to shunt resistance has been detected";
+                    break;
+                case "3":
+                    predictionText.innerText = "Prediction: Mismatch loss has been detected.";
+                    break;
+                default:
+                    predictionText.innerText = "No prediction";
+            };
 
             // extract the power data points
             for (let i = 0; i < totalDataPoint; i++) {
-                formattedPower.push(Math.round(formattedCurrent[i] * voltagepoints[i]));
+                formattedPower.push(formattedCurrent[i] * voltagepoints[i]);
             };
             sessionStorage.setItem('powerpoints', JSON.stringify(voltagepoints))
             // Using array methods
             powerAtMaxPoint = Math.max(...formattedPower);
+            formattedpowerAtMaxPoint = Math.round(powerAtMaxPoint);
             powerAtMaxPointIndex = formattedPower.indexOf(powerAtMaxPoint);
             sessionStorage.setItem("pmp", powerAtMaxPoint);
 
             voltageAtMaxPoint = voltagepoints[powerAtMaxPointIndex];
+            formattedvoltageAtMaxPoint = voltageAtMaxPoint.toFixed(1);
             sessionStorage.setItem("vmp", voltageAtMaxPoint);
 
             currentAtMaxPoint = formattedCurrent[powerAtMaxPointIndex];
@@ -785,6 +879,18 @@ async function performActionsWithDeviceID() {
             // extract the operating power
             sessionStorage.setItem("pop", Math.round(formattedVoperating * formattedIoperating));
             formattedOperatingPower = sessionStorage.getItem("pop");
+
+
+            // extract the instantaneous operating voltage
+            formattedInstantVoltage = JSON.parse(sessionStorage.getItem('vinst'));
+
+
+            // extract the instantaneous operating voltage
+            formattedInstantcurrent = JSON.parse(sessionStorage.getItem('iinst'));
+
+            // extract the operating power
+            sessionStorage.setItem("pinst", Math.round(formattedInstantVoltage * formattedInstantcurrent));
+            formattedInstantpower = sessionStorage.getItem("pinst");
 
             // Calculate fill factor
             fillfactor = Math.round((voltageAtMaxPoint * currentAtMaxPoint) / (formattedVoc * formattedIsc) * 100) / 100;
@@ -801,7 +907,6 @@ async function performActionsWithDeviceID() {
                             },
                             body: JSON.stringify(simulatedCurvy),
                         };
-
                         const responseSimCurvy = await fetch("/deviceAttribute", simCurvyOptions);
                         const simulatedCurvyData = await responseSimCurvy.json();
                         sessionStorage.setItem('simCurrent', handleNull(simulatedCurvyData["Current"]));
@@ -836,13 +941,13 @@ async function performActionsWithDeviceID() {
                 createSparklineImage('sparkline-image-isc', `${formattedIsc} A`);
                 createSparklineImage('sparkline-image-ff', `${fillfactor}`);
 
-                createSparklineImage('sparkline-image-vmp', `${voltageAtMaxPoint} V`);
+                createSparklineImage('sparkline-image-vmp', `${formattedvoltageAtMaxPoint} V`);
                 createSparklineImage('sparkline-image-imp', `${currentAtMaxPoint} A`);
-                createSparklineImage('sparkline-image-pmp', `${powerAtMaxPoint}W`);
+                createSparklineImage('sparkline-image-pmp', `${formattedpowerAtMaxPoint}W`);
 
-                createSparklineImage('sparkline-image-vop', `${formattedVoperating} V`);
-                createSparklineImage('sparkline-image-iop', `${formattedIoperating} A`);
-                createSparklineImage('sparkline-image-pop', `${formattedOperatingPower}W`);
+                createSparklineImage('sparkline-image-vop', `${formattedInstantVoltage} V`);
+                createSparklineImage('sparkline-image-iop', `${formattedInstantcurrent} A`);
+                createSparklineImage('sparkline-image-pop', `${formattedInstantpower}W`);
 
                 createSparklineImage('sparkline-image-temperature', `${cellTemperature}°C`);
                 createSparklineImage('sparkline-image-irradiance', `${simIrradiance}W/m²`);
@@ -853,13 +958,13 @@ async function performActionsWithDeviceID() {
                 createSparklineImage('sparkline-image-isc', `${formattedIsc} A`);
                 createSparklineImage('sparkline-image-ff', `${fillfactor}`);
 
-                createSparklineImage('sparkline-image-vmp', `${voltageAtMaxPoint} V`);
+                createSparklineImage('sparkline-image-vmp', `${formattedvoltageAtMaxPoint} V`);
                 createSparklineImage('sparkline-image-imp', `${currentAtMaxPoint} A`);
-                createSparklineImage('sparkline-image-pmp', `${powerAtMaxPoint}W`);
+                createSparklineImage('sparkline-image-pmp', `${formattedpowerAtMaxPoint}W`);
 
-                createSparklineImage('sparkline-image-vop', `${formattedVoperating} V`);
-                createSparklineImage('sparkline-image-iop', `${formattedIoperating} A`);
-                createSparklineImage('sparkline-image-pop', `${formattedOperatingPower}W`);
+                createSparklineImage('sparkline-image-vop', `${formattedInstantVoltage} V`);
+                createSparklineImage('sparkline-image-iop', `${formattedInstantcurrent} A`);
+                createSparklineImage('sparkline-image-pop', `${formattedInstantpower}W`);
 
                 createzerosparkline('sparkline-image-temperature')
                 createzerosparkline('sparkline-image-irradiance')
@@ -867,6 +972,9 @@ async function performActionsWithDeviceID() {
             }
 
         };
+        // console.log({ formattedCurrent });
+        // console.log({ formattedVoc });
+
     };
 
     webSocket.onclose = function (event) {
@@ -1229,22 +1337,22 @@ async function createSparklineImage(elementID, value_sparline) {
                 extracteddata = trendLineData['ff'];
                 break;
             case 'sparkline-image-vmp':
-                extracteddata = trendLineData['vmp'];
+                extracteddata = trendLineData['vmpcal'];
                 break;
             case 'sparkline-image-imp':
-                extracteddata = trendLineData['imp'];
+                extracteddata = trendLineData['impcal'];
                 break;
             case 'sparkline-image-pmp':
-                extracteddata = trendLineData['pmp'];
+                extracteddata = trendLineData['pmpcal'];
                 break;
             case 'sparkline-image-vop':
-                extracteddata = trendLineData['v'];
+                extracteddata = trendLineData['vmp'];
                 break;
             case 'sparkline-image-iop':
-                extracteddata = trendLineData['i'];
+                extracteddata = trendLineData['imp'];
                 break;
             case 'sparkline-image-pop':
-                extracteddata = trendLineData['pop'];
+                extracteddata = trendLineData['pmp'];
                 break;
             case 'sparkline-image-temperature':
                 extracteddata = trendLineData['simTemperature'];
@@ -1262,7 +1370,6 @@ async function createSparklineImage(elementID, value_sparline) {
 
     // Sort the extracteddata array in ascending order of timestamp
     extracteddata.sort((a, b) => new Date(a.ts) - new Date(b.ts));
-
 
     const targetTimeZone = 'Australia/Sydney'; // Specify the target time zone
     const timeStamp = extracteddata.map(item => {
@@ -1685,22 +1792,22 @@ document.getElementById("dropdown-content").addEventListener("change", function 
     // Depending on the selection of the parameters, pass the data in to the temporary variable.
     switch (selectedParameter) {
         case "Vmp":
-            tempData = jsonData['vmp'];
+            tempData = jsonData['vmpcal'];
             break;
         case "Imp":
-            tempData = jsonData['imp'];
+            tempData = jsonData['impcal'];
             break;
         case "Pmp":
-            tempData = jsonData['pmp'];
+            tempData = jsonData['pmpcal'];
             break;
         case "V":
-            tempData = jsonData['v'];
+            tempData = jsonData['vmp'];
             break;
         case "I":
-            tempData = jsonData['i'];
+            tempData = jsonData['imp'];
             break;
         case "P":
-            tempData = jsonData['pop'];
+            tempData = jsonData['pmp'];
             break;
         case "Voc":
             tempData = jsonData['voc'];
@@ -1796,7 +1903,7 @@ async function updateWifiSignal(rssi, rssi_lastupdate) {
 
 function createParameterChart(json_data, elementIDParameterChart) {
     document.getElementById('parameter-graph').innerHTML = ' ';
-    const pmp = (json_data['pmp']);
+    const pmp = (json_data['pmpcal']);
     pmp.sort((a, b) => a.ts - b.ts);
     const timeStamp = pmp.map(item => {
         const date = new Date(item.ts);
@@ -1804,7 +1911,7 @@ function createParameterChart(json_data, elementIDParameterChart) {
     });
     const values_pmp = pmp.map(item => parseFloat(item.value));
 
-    const pop = (json_data['pop']);
+    const pop = (json_data['pmp']);
     pop.sort((a, b) => a.ts - b.ts);
     const values_pop = pop.map(item => parseFloat(item.value));
 
@@ -1956,170 +2063,19 @@ function findAverage(array) {
     return Math.round(averageEfficiency);
 }
 
-// Fault monitoring --> if logo clicked 5 times then show the fault monitoring tab 
-let clickCount = 0;
-document.getElementById('logo').addEventListener('click', function () {
-
-    clickCount++;
-    if (clickCount === 5) {
-        const toggleContainer = document.getElementById('toggle-container');
-        toggleContainer.innerHTML = `
-            <label class="toggle">
-                <input class="toggle-checkbox" type="checkbox">
-                <div class="toggle-switch"></div>
-                <span class="toggle-label">Fault Monitoring</span>
-            </label>
-        `;
-        const togglePosition = document.querySelector('.toggle-checkbox');
-        togglePosition.addEventListener('change', function () {
-
-            if (togglePosition.checked) {
-                if (jsonData["pmp"].length === 0) {
-                    document.getElementById('parameter-graph').innerHTML = '<img src="../images/nodata.png" class="image-modify" alt="No data found">';
-                } else {
-                    createFaultChart(jsonData, "parameter-graph");
-                };
-            } else {
-                if (jsonData["pmp"].length === 0) {
-                    document.getElementById('parameter-graph').innerHTML = '<img src="../images/nodata.png" class="image-modify" alt="No data found">';
-                } else {
-                    createParameterChart(jsonData, "parameter-graph");
-                };
-            };
-        });
-
-    };
-
-});
-// Function to format timestamp as hh:mm
-
-function createFaultChart(json_data, elementIDFaultChart) {
-    const faultCode = json_data['faultCode'];
-    // Arrays to store extracted timestamps and values
-    const timestamps = [];
-    const values = [];
-
-    faultCode.forEach(entry => {
-        const date = new Date(entry.ts); // Create Date object from timestamp
-        const hours = date.getHours().toString().padStart(2, '0'); // Get hours and pad with leading zero if necessary
-        const minutes = date.getMinutes().toString().padStart(2, '0'); // Get minutes and pad with leading zero if necessary
-        const formattedTime = `${hours}:${minutes}`; // Format time as hh:mm
-        timestamps.push(formattedTime); // Store formatted timestamp
-        values.push(entry.value);  // Store value
-    });
-
-    // Check if timestamps are in ascending order
-    let isAscending = true;
-    for (let i = 0; i < timestamps.length - 1; i++) {
-        if (timestamps[i] > timestamps[i + 1]) {
-            isAscending = false;
-            break;
-        }
-    }
-
-    // If timestamps are not ascending, sort both timestamps and values accordingly
-    if (!isAscending) {
-        const sortedIndices = timestamps.map((_, index) => index).sort((a, b) => {
-            return timestamps[a] > timestamps[b] ? 1 : -1;
-        });
-
-        const sortedTimestamps = [];
-        const sortedValues = [];
-
-        sortedIndices.forEach(index => {
-            sortedTimestamps.push(timestamps[index]);
-            sortedValues.push(values[index]);
-        });
-
-        // Replace original arrays with sorted arrays
-        timestamps.splice(0, timestamps.length, ...sortedTimestamps);
-        values.splice(0, values.length, ...sortedValues);
-    }
-
-
-    // Define Plotly trace with correct data
-    var trace1 = {
-        x: timestamps,
-        y: values,
-        type: 'scatter',
-        mode: 'lines+markers',
-        name: "Faults"
-    };
-
-    var data = [trace1];
-
-    var layout = {
-        showlegend: true,
-        legend: {
-            orientation: 'h',
-            x: 0.5,
-            xanchor: 'center',
-            y: -0.5,
-            yanchor: 'bottom'
-        },
-        hovermode: 'x',
-        yaxis: { title: 'Fault' },
-    };
-
-    var config = {
-        responsive: true,
-        displaylogo: false,
-        displayModeBar: false,
-    };
-
-    Plotly.newPlot(elementIDFaultChart, data, layout, config);
-    // if clicked on the points, show  the fault data 
-    document.getElementById(elementIDFaultChart).on('plotly_click', function (eventData) {
-        let textValue;
-        let pointIndex = eventData.points[0].pointIndex;
-        var clickedFaultValue = values[pointIndex];
-        var clickedtimestamp = timestamps[pointIndex];
-        let faulterrors = faultcodedecode(clickedFaultValue);
-        if (clickedFaultValue != 0) {
-            textValue = 'Faults at ' + clickedtimestamp + '<br>' + faulterrors;
-
-        } else {
-            textValue = "No Faults";
-        }
-
-
-
-        var updatedLayout = {
-            annotations: [{
-                x: 1, // x-coordinate (adjust as needed)
-                y: 1, // y-coordinate (adjust as needed)
-                xref: 'paper',
-                yref: 'paper',
-                xanchor: 'right',
-                yanchor: 'top',
-                text: textValue,
-                showarrow: false,
-                font: {
-                    size: 12,
-                    color: '#ffffff' // Text color
-                },
-                bgcolor: '#000000', // Background color
-                opacity: 0.8, // Opacity of the background
-                borderpad: 4, // Padding around the text
-                borderwidth: 1, // Border width
-                bordercolor: '#ffffff' // Border color
-            }]
-        };
-        Plotly.relayout(elementIDFaultChart, updatedLayout);
-    });
-};
 // function to decode fauly code
-function faultcodedecode(clickedFaultValue) {
+function faultcodedecode(faultCodeVal) {
     const shift_count = 16;
     let nonZeroFaults = [];
     for (let i = 0; i < shift_count; i++) {
-        const fault = clickedFaultValue & (1 << i);
+        const fault = faultCodeVal & (1 << i);
         if (fault !== 0) {
             nonZeroFaults.push(fault); // Adding 1 to i to convert it to 1-indexed value
 
         };
     };
     let errorList = {
+        0: "No Fault",
         1: "Internal low 15V supply",
         2: "Internal high 15V supply",
         4: "High internal temperature",
@@ -2139,6 +2095,36 @@ function faultcodedecode(clickedFaultValue) {
     const faultErrors = nonZeroFaults.map(faultCode => errorList[faultCode]);
     const errorMessage = faultErrors.join("<br>");
     return errorMessage;
+};
+
+// function to decode application status
+function applicationState(app_state) {
+
+    let appStatEnum = {
+        0: "ApplicationState Fault",
+        1: "ApplicationState Startup",
+        2: "ApplicationState Normal",
+        3: "ApplicationState WaitForCapDischargeInitial",
+        4: "ApplicationState WaitForVoc",
+        5: "ApplicationState CapConnect",
+        6: "ApplicationState TimeCapCharge",
+        7: "ApplicationState WaitForCapDischarge",
+        8: "ApplicationState MeasureIsc",
+        9: "ApplicationState LogCapCharge",
+        10: "ApplicationState WaitForCapDischargeEnd",
+        11: "ApplicationState ProcessScanData",
+        12: "ApplicationState ManualOverride",
+        13: "ApplicationState Reboot",
+        0xFFFF: "ApplicationState Max",
+
+    };
+
+    // Check if app_state exists in appStatEnum using `in` operator
+    if (app_state in appStatEnum) {
+        return appStatEnum[app_state];
+    } else {
+        return "Unknown ApplicationState"; // Default case if app_state is not found
+    }
 };
 
 function returnzero() {
@@ -2349,7 +2335,7 @@ async function getsimulationstatus() {
     let modelValueExists = false;
 
     for (let item of simulationresponseData) {
-        if (item.key === "model") {
+        if (item.key === "userPanelData") {
             foundModelKey = true;
             // Check if value is present and not null or undefined
             if (item.value !== null && item.value !== undefined) {
@@ -2374,3 +2360,234 @@ async function generateSparklineLoading(elementID) {
     document.getElementById(elementID).src = "../images/icons8-loading.gif";
     document.getElementById(elementID).classList.add('image-modify2');
 };
+
+
+//////////////////////////////////FAULT ANALYSIS TAB//////////////////////////
+
+let clickCount = 0;
+const logo = document.getElementById("logo");
+const faultTab = document.getElementById("faultTab");
+
+logo.addEventListener("click", function () {
+    clickCount++;
+    if (clickCount === 5) {
+        faultTab.style.display = "block";
+        let today = new Date();
+        let year = today.getFullYear();
+        let month = (today.getMonth() + 1).toString().padStart(2, '0'); // Adding 1 because January is 0
+        let day = today.getDate().toString().padStart(2, '0');
+        let currentDate = year + '-' + month + '-' + day;
+        // Set the value of the input field
+        document.getElementById('faultdatepicker').value = currentDate;
+        getfaultdata()
+    }
+});
+
+document.getElementById('faultdatepicker').addEventListener('input', async function () {
+    getfaultdata();
+});
+
+// clicked forward
+document.getElementById('datefault-forward').addEventListener('click', async function () {
+    let currentDate = new Date(document.getElementById('faultdatepicker').value);
+    // add one day from the current date
+    currentDate.setDate(currentDate.getDate() + 1);
+    // Set the new date value in the datepicker
+    document.getElementById('faultdatepicker').valueAsDate = currentDate;
+    getfaultdata();
+});
+
+document.getElementById('datefault-backward').addEventListener('click', async function () {
+    let currentDate = new Date(document.getElementById('faultdatepicker').value);
+    // Subtract one day from the current date
+    currentDate.setDate(currentDate.getDate() - 1);
+    // Set the new date value in the datepicker
+    document.getElementById('faultdatepicker').valueAsDate = currentDate;
+    getfaultdata();
+});
+
+async function getfaultdata() {
+    let responseJson;
+    let deviceID = sessionStorage.getItem('deviceID');
+    let epoachFaultDate = null;
+    const selectedDate = document.getElementById('faultdatepicker').value;
+
+    if (selectedDate) {
+        const selectedDateTime = new Date(selectedDate + 'T00:00:00');
+        if (selectedDateTime > new Date()) {
+            const faultTableDiv = document.getElementById('fault-table');
+            // Clear any existing table or message before creating a new one
+            faultTableDiv.innerHTML = '';
+            const noFaultLogMessage = document.createElement('p');
+            noFaultLogMessage.textContent = "Selected date is in the future. Please select a valid date";
+            faultTableDiv.appendChild(noFaultLogMessage);
+            return;  // Stop execution if the date is invalid
+        } else {
+            epoachFaultDate = selectedDateTime.getTime();
+        }
+    } else {
+        console.error("No date selected. Please select a date.");
+        return;  // Stop execution if the date is not selected
+    }
+
+    const requestFaultData = { epoachFaultDate, deviceID };
+    const requestFaultDataOptions = {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestFaultData),
+    };
+
+    try {
+        const responseFaultData = await fetch("/getFaultLog", requestFaultDataOptions);
+        responseJson = await responseFaultData.json();
+
+        const faultTableDiv = document.getElementById('fault-table');
+        // Clear any existing table or message before creating a new one
+        faultTableDiv.innerHTML = '';
+
+        // Check if the response JSON is empty
+        if (!responseJson.faultLog || responseJson.faultLog.length === 0) {
+            // Display "No fault log" message
+            const noFaultLogMessage = document.createElement('p');
+            noFaultLogMessage.textContent = "No fault log";
+            faultTableDiv.appendChild(noFaultLogMessage);
+            return;
+        }
+
+        // Parse the JSON values
+        const parsedData = responseJson.faultLog.map(entry => ({
+            ts: convertToAEST(entry.ts),
+            ...JSON.parse(entry.value),
+            faultCodeDescription: faultcodedecode(JSON.parse(entry.value).faultCode),
+            applicationState: applicationState(JSON.parse(entry.value).appStatus)
+        }));
+
+        // Create a table element
+        const table = document.createElement('table');
+        table.id = 'fault-data-table';
+        table.classList.add('responsive-table'); // Optional: Add a class for additional styling
+
+        // Create the table header row
+        const headerRow = document.createElement('tr');
+
+        // Define the headers
+        const headers = ['time', 'energyLife', 'scanCntLife', 'app status', 'appState description', 'faultCode', 'faultCode Description', 'iPv', 'vPv', 'vCap', 'vRly', 'vInternal', 'temperature', 'rssi'];
+        headers.forEach(headerText => {
+            const header = document.createElement('th');
+            header.textContent = headerText;
+            headerRow.appendChild(header);
+        });
+
+        // Append the header row to the table
+        table.appendChild(headerRow);
+
+        // Create the table rows
+        parsedData.forEach(rowData => {
+            const row = document.createElement('tr');
+            const headersTable = ['ts', 'energyLife', 'scanCntLife', 'appStatus', 'applicationState', 'faultCode', 'faultCodeDescription', 'iPv', 'vPv', 'vCap', 'vRly', 'vInternal', 'temperature', 'rssi'];
+            headersTable.forEach(header => {
+                const cell = document.createElement('td');
+                cell.textContent = rowData[header];
+                row.appendChild(cell);
+            });
+
+            table.appendChild(row);
+        });
+
+        // Append the table to the fault-table div
+        faultTableDiv.appendChild(table);
+
+    } catch (error) {
+        console.log(error)
+        const faultTableDiv = document.getElementById('fault-table');
+        faultTableDiv.innerHTML = '';
+        const noFaultLogMessage = document.createElement('p');
+        noFaultLogMessage.textContent = "Error fetching fault log data";
+        faultTableDiv.appendChild(noFaultLogMessage);
+
+    }
+}
+
+
+function convertToAEST(epoch) {
+    const date = new Date(epoch);
+    const options = {
+        timeZone: 'Australia/Sydney',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    };
+    return date.toLocaleString('en-AU', options);
+}
+
+// Download the csv curve
+document.getElementById('downloadButton').addEventListener('click', async function () {
+
+    let currentPoints;
+    let voltagePoints;
+    let powerPoints;
+    currentPoints = JSON.parse(sessionStorage.getItem('currentPoints'));
+    voltagePoints = JSON.parse(sessionStorage.getItem('voltagepoints'));
+
+    // Combine data into CSV format
+    let csvContent = "Voltage,Current,Power\n";
+    for (let i = 0; i < currentPoints.length; i++) {
+        csvContent += `${voltagePoints[i]},${currentPoints[i] / 1000},${(voltagePoints[i] * (currentPoints[i] / 1000)).toFixed(3)}\n`;
+    }
+
+    // Create a Blob from the CSV content
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+
+    // Create a link element
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `pvgoData-${convertToAEST(lastUpdatedTime)}`;
+
+
+    // Append the link to the body
+    document.body.appendChild(link);
+
+    // Simulate a click to download the file
+    link.click();
+
+    // Remove the link from the document
+    document.body.removeChild(link);
+
+});
+
+// send slack meassge - Delete later
+document.getElementById('sendButton').addEventListener('click', function () {
+    const userPrediction = window.prompt("What do you predict?");
+    const data = {
+        text: "ts: " + sessionStorage.getItem('curveTs') + ' ' + " deviceID: " + sessionStorage.getItem('deviceID') + " Expected: " + userPrediction
+    };
+
+    fetch('/send-to-slack', { // Make sure this URL matches your Node.js server URL
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+        .then(response => {
+            if (response.ok) {
+                const alertDiv = createAlert("Response Sent, Thank you.");
+                alertContainer.appendChild(alertDiv);
+
+            } else {
+                const alertDiv = createAlert("Error Sending the response.");
+                alertContainer.appendChild(alertDiv);
+
+            }
+        })
+        .catch(error => {
+            console.error('Error sending message to Slack:', error);
+        });
+});
+

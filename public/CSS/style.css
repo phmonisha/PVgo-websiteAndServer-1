@@ -73,9 +73,9 @@ html {
 
 .background {
   /* background: #252525; */
-  background: rgba(0, 0, 0, 0.9) url(/images/bck8.jpg);
+  background: rgba(0, 0, 0, 1) url(/images/bck9.jpg);
   background-size: cover;
-  background-blend-mode: darken;
+  /* background-blend-mode: darken; */
 }
 
 .firstSection {
@@ -1708,6 +1708,16 @@ label {
   font-family: 'Ubuntu', sans-serif;
 }
 
+.label-curve>p {
+  color: #000000;
+  text-align: left;
+  margin-top: 5px;
+  margin-left: 10px;
+  margin-bottom: 10px;
+  font-size: 15px;
+  font-family: 'Ubuntu', sans-serif;
+}
+
 .card-data {
   display: grid;
   grid-auto-columns: 1fr;
@@ -2774,4 +2784,39 @@ label {
   #myForm {
     max-width: 100% !important;
   }
+}
+
+.password-container {
+  position: relative;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 0%;
+  right: 10px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.password-toggle img {
+  width: 12px;
+  filter: grayscale(80%);
+}
+
+/* Delete later  */
+.report-button {
+  background-color: #8bc63f;
+  border: none;
+  color: rgb(0, 0, 0);
+  padding: 8px 6px;
+  cursor: pointer;
+  border-radius: 3px;
+  font-family: 'Ubuntu', sans-serif;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 80px;
+  margin-left: 10px;
+  margin-bottom: 10px;
 }

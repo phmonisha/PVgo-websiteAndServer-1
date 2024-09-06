@@ -44,10 +44,10 @@ async function sendVerifyCode(){
             }
             else if (json1.saveCodeResponse === 1) {
                 if(resent === false){
-                    notification.textContent = `Please enter the 4-digit code sent to your email address ${email}`;
+                    notification.textContent = `Please enter the 6-digit code sent to your email address ${email}`;
                 }
                 else {
-                    notification.textContent = `Your 4-digit code has been resent to your email address ${email}`;
+                    notification.textContent = `Your 6-digit code has been resent to your email address ${email}`;
                 }
             }
         }

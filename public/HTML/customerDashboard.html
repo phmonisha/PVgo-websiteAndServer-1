@@ -75,6 +75,12 @@
             justify-content: center;
         }
 
+        .flexDateFault {
+            display: flex;
+            align-items: center;
+            justify-content: left;
+        }
+
         .mergGrid3 {
             grid-column: 1;
             grid-row: 1/span 2;
@@ -93,7 +99,6 @@
             padding: 0px 10px;
             display: flex;
             justify-content: center;
-            /* Horizontally center */
             align-items: center;
         }
 
@@ -103,6 +108,73 @@
 
         .layoutRight {
             max-width: none !important;
+        }
+
+        #faultdatepicker {
+            width: 120px;
+            padding: 5px;
+        }
+
+        #faultTab {
+            display: none;
+        }
+
+        .rotate180 {
+            transform: rotate(180deg);
+        }
+
+        #fault-table-container {
+            max-height: 600px;
+            /* Limit maximum height if needed */
+            overflow-y: auto;
+            /* Enable vertical scrolling */
+            overflow-x: auto;
+            /* Enable horizontal scrolling */
+        }
+
+        #fault-table {
+            width: 100%;
+            /* Table occupies full width of its container */
+            border-collapse: collapse;
+            /* Collapse table borders */
+            margin-top: 20px;
+            /* Optional margin for spacing */
+        }
+
+        #fault-table th,
+        #fault-table td {
+            border: 1px solid #000;
+            /* Border for cells */
+            padding: 8px;
+            /* Padding inside cells */
+            text-align: left;
+            /* Align text inside cells */
+            word-wrap: break-word;
+            /* Wrap long words */
+        }
+
+        #fault-table th {
+            background-color: #000000;
+            /* Background color for header cells */
+            color: #ffffff;
+            /* Text color for header cells */
+            position: sticky;
+            /* Sticky header */
+            top: 0;
+            /* Stick to the top of the container */
+            z-index: 1;
+            /* Ensure header stays above content */
+        }
+
+        @media screen and (max-width: 600px) {
+
+            /* Adjust table and cell behavior for smaller screens */
+            #fault-table-container {
+                width: 100%;
+                /* Full width on smaller screens */
+                overflow-x: auto;
+                /* Enable horizontal scrolling */
+            }
         }
     </style>
 
@@ -200,7 +272,8 @@
                 <!-- <h1>Customer Dashboards</h1> -->
                 <button class="tablinks" onclick="openTab(event, 'Current')" id="defaultOpen">Current</button>
                 <button class="tablinks" onclick="openTab(event, 'Historic')" id="HistoricTab">Historic</button>
-                <!-- <button class="tablinks" onclick="openTab(event, 'Heat Map')">Heat Map</button> -->
+                <button class="tablinks" onclick="openTab(event, 'FaultAnalysis')" id="faultTab">Fault
+                    Analysis</button>
                 <!-- <button class="tablinks" onclick="openTab(event, 'energy-performance')">Energy Performance</button> -->
                 <label for="labelSelector"></label>
                 <select id="labelSelector">
@@ -227,6 +300,8 @@
                         <div class="label-curve">
                             <label for="toggleSecondaryAxis">P-V curve:</label>
                             <input type="checkbox" id="toggleSecondaryAxis" style="width: 13px;">
+                            <p id="ml-prediction"></p>
+                            <button class="report-button" id="sendButton">Report Prediction</button>
                         </div>
                     </div>
                     <div class="card-data">
@@ -261,21 +336,21 @@
                         <img id="sparkline-image-pmp" src="" alt="">
                     </div>
                     <div class="card-data">
-                        <div class="card-heading">Operating Voltage</div>
+                        <div class="card-heading">Instantaneous Operating Voltage</div>
                         <!-- <div id="sparkline-image-vop"></div> -->
                         <img id="sparkline-image-vop" src="" alt="">
-
                     </div>
                     <div class="card-data">
-                        <div class="card-heading">Operating Current</div>
+                        <div class="card-heading">Instantaneous Operating Current</div>
                         <!-- <div id="sparkline-image-iop"></div> -->
                         <img id="sparkline-image-iop" src="" alt="">
                     </div>
                     <div class="card-data">
-                        <div class="card-heading">Operating Power</div>
+                        <div class="card-heading">Instantaneous Operating Power</div>
                         <!-- <div id="sparkline-image-pop"></div> -->
                         <img id="sparkline-image-pop" src="" alt="">
                     </div>
+
                     <div class="card-data">
                         <div class="card-heading">Measured cell temperature</div>
                         <!-- <div id="sparkline-image-temperature"></div> -->
@@ -287,7 +362,7 @@
                         <img id="sparkline-image-irradiance" src="" alt="">
                     </div>
                     <div class="card-data">
-                        <div class="card-heading">Performance Factor</div>
+                        <div class="card-heading">Panel Performance Factor</div>
                         <!-- <div id="sparkline-image-perfromance-factor"></div> -->
                         <img id="sparkline-image-perfromance-factor" src="" alt="">
                     </div>
@@ -427,10 +502,19 @@
                     <div id="parameter-graph"></div>
                 </div>
             </div>
-            <!-- <div id="Heat Map" class="tabcontent">
-        <h3>Heat Map</h3>
-        <p>Graph 3</p>
-    </div> -->
+            <div id="FaultAnalysis" class="tabcontent">
+                <div class="flexDateFault">
+                    <p id="label-faultdate">Date:&nbsp;&nbsp;</p>
+                    <button id="datefault-backward" class="datebuttons"><img width="15" height="15"
+                            src="https://img.icons8.com/metro/26/back.png" alt="back" /></button>
+                    &nbsp;<input type="date" id="faultdatepicker" placeholder="yyyy/mm/dd">&nbsp;
+                    <button id="datefault-forward" class="datebuttons"><img class="rotate180" width="15" height="15"
+                            src="https://img.icons8.com/metro/26/back.png" alt="back" /></button>
+                </div>
+                <div id="fault-table-container">
+                    <table id="fault-table"></table>
+                </div>
+            </div>
 
             <!-- <div id="Device Information" class="tabcontent">
         <h3>Device Info</h3>
@@ -476,6 +560,7 @@
 
         document.getElementById("defaultOpen").click();
     </script>
+
     <script type="module" src="../js/dashboard.js"></script>
 
 </body>
