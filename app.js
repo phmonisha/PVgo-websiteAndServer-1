@@ -18,7 +18,7 @@ const { saveNewPwd, autenticateUserPWD, saveNewPwdTenant, autenticateTenantUserP
 const sendEmail = require("./sendEmail");
 require('dotenv').config();
 
-const port = 3010;
+const port = 3011;
 
 app.listen(port, () => {
     console.log(`Application started successfully in port ${port}`);
@@ -483,6 +483,7 @@ app.post('/New_Tenant_Registration', async function (req, res) {
 // app.get('/Existing_Tenant', function (req, res) {
 //     res.sendFile(path.join(__dirname, 'public', '/LOGIN_SIGNIN_HTML/Existing Tenant.html'));
 // });
+
 app.post('/onLoad', authenticateToken, async function (req, res) {
     if (userData[req.user.name] && userData[req.user.name].role) {
         role = userData[req.user.name].role;
