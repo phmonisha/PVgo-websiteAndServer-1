@@ -4,9 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <title>Customer Alarm</title>
+    <link rel="icon" type="image/x-icon" href="../images/logoCircular.PNG">
 
-    <link rel="stylesheet" href="../CSS/style.css">
+    <link rel="stylesheet" href="../css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap"
@@ -16,133 +17,32 @@
         rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <!-- <script type="module" src="../js/funcFE.js"></script> -->
+    <script type="module" src="../js/funcFE.js"></script>
     <style>
-        .grid-containerD {
-            display: grid;
-            grid-template-columns: auto auto auto auto auto auto auto auto;
-            background: none;
-            padding: 0px;
-            margin: 20px 0px;
-
+        label {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            font-size: 100%;
+            font: inherit;
+            vertical-align: baseline;
         }
 
-        @media (max-width: 500px) {
-            .grid-containerD {
-                display: grid;
-                grid-template-columns: auto auto auto auto auto auto auto auto;
-                background: none;
-                margin: 10px 0px;
-                position: sticky;
-                top: 56px;
-                z-index: 2;
-                background-color: rgba(232, 228, 228, 255);
-                padding-top: 2%;
-                padding-bottom: 2%;
-                padding-left: 5%;
-                padding-right: 5%;
-                border-style: solid;
-                border-width: 0.2px;
-                border-color: gray;
-                border-radius: 10px 10px 10px 10px;
-
-            }
-        }
-
-        @media (max-width: 410px) {
-            .grid-containerD {
-                grid-template-columns: repeat(1, 1fr);
-            }
-
-        }
-
-        .grid-itemD {
-            background: none;
-            font-size: 13px;
-            color: rgba(37, 11, 11, 0.849);
-            border: none;
-            display: flex;
-            justify-content: center;
-            /* Horizontally center */
-            align-items: end;
-        }
-
-        .flexD {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .mergGrid3 {
-            grid-column: 1;
-            grid-row: 1/span 2;
-            display: flex;
-            justify-content: center;
-            align-items: end;
-
-        }
-
-        .subgrid-containerD {
-            display: grid;
-            grid-template-columns: auto auto auto;
-        }
-
-        .subgrid-itemD {
-            padding: 0px 10px;
-            display: flex;
-            justify-content: center;
-            /* Horizontally center */
-            align-items: center;
-        }
-
-        .btn-control {
-            width: 40px;
-        }
-
-        .layoutRight {
-            max-width: none !important;
-        }
-
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            background-color: #f9f9f9;
-            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-            max-height: 150px;
-            overflow-y: auto;
-            width: 18%;
-            z-index: 999;
-        }
-
-        @media screen and (max-width: 750px) {
-            .dropdown-content {
-                display: none;
-                position: absolute;
-                background-color: #f9f9f9;
-                box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-                max-height: 100px;
-                overflow-y: auto;
-                width: 30%;
-                z-index: 999;
-            }
-        }
-
-        .dropdown-content a {
-            padding: 12px 16px;
+        .inp {
             display: block;
-            cursor: pointer;
-            color: black;
-            text-decoration: none;
-        }
-
-        .dropdown-content a:hover {
-            background-color: #f1f1f1;
+            margin: 12px auto !important;
+            padding: 5px 0px !important;
+            border: none !important;
+            border-radius: 20px !important;
+            width: 100% !important;
+            height: 20px;
+            text-align: center;
+            box-shadow: 5px 5px 10px rgba(37, 11, 11, 0.3);
         }
     </style>
 </head>
 
-<body class="page-identifier" data-page="tenantDashboard">
+<body class="page-identifier" data-page="customerAlarm">
     <nav class="navbar-layout background">
         <div class="nav-list-layout">
             <div class="logoLayout"><img src="../images/img.PNG" alt="logo"></div>
@@ -157,11 +57,12 @@
             <div class="logoLayoutRightNav"><img src="../images/img.PNG" alt="logo"></div>
             <div class="profile">
                 <div class="profileImage"></div>
-                <div class="roleName">
-                </div>
+                <div class="roleName"></div>
                 <div><button type="submit" id="logoutButton" onclick="toggleMenu()">
                         <div id="profileImage"></div>
                     </button></div>
+
+                <!-- <div><img src="../images/logout_icon.png" alt="profileImage"></div> -->
             </div>
         </div>
 
@@ -169,13 +70,13 @@
             <div class="sub-menu background">
                 <div class="user-info">
 
-                    <a href="tenantHome.html" class="sub-menu-link">
+                    <a href="customerHome.html" class="sub-menu-link">
                         <img src="../images/profile.png">
                         <p>Profile</p>
                         <span>></span>
                     </a>
 
-                    <a href="tenantUser.html" class="sub-menu-link">
+                    <a href="customerUser.html" class="sub-menu-link">
                         <img src="../images/addUser.png">
                         <p>Add New User</p>
                         <span>></span>
@@ -195,33 +96,29 @@
     <section>
         <div class="layoutLeft background">
             <div>
-                <div class="logoLayout"><img src="../images/logoSquareFont.PNG" alt="logo" id="logo"></div>
+                <div class="logoLayout"><img src="../images/logoSquareFont.PNG" alt="logo"></div>
             </div>
             <ul>
                 <li class="roleHeading">
-                    <p style="font-size: 18px;" id="installerName"></p>
-                    <p style="font-size: 13px;">Installer</p>
+                    <p style="font-size: 18px;" id="customerName"></p>
+                    <p style="font-size: 13px;">Customer</p>
                 </li>
-                <li><a href="tenantCustomer.html" class="sub-menu-link"><img src="../images/customer.png"
+                <li><a href="customerDevice.html" class="sub-menu-link"><img src="../images/devices.png"
                             class="imgWidth">
-                        <p>Customer</p>
-                        <span>></span>
-                    </a></li>
-                <li><a href="tenantDevice.html" class="sub-menu-link"><img src="../images/devices.png" class="imgWidth">
                         <p>Device</p>
                         <span>></span>
                     </a></li>
-                <li><a href="tenantDashboard.html" class="sub-menu-link"><img src="../images/dashboard.png"
+                <li><a href="customerDashboard.html" class="sub-menu-link"><img src="../images/dashboard.png"
                             class="imgWidth">
                         <p>Dashboard</p>
                         <span>></span>
                     </a></li>
-                <li><a href="tenantAlarm.html" class="sub-menu-link"><img src="../images/alarm-left.png"
+                <li><a href="customerAlarm.html" class="sub-menu-link"><img src="../images/alarm-left.png"
                             class="imgWidth">
                         <p>Alarm</p>
                         <span>></span>
                     </a></li>
-                <li><a href="tenantNotification.html" class="sub-menu-link"><img src="../images/notification.png"
+                <li><a href="customerNotification.html" class="sub-menu-link"><img src="../images/notification.png"
                             class="imgWidth">
                         <p>Notification</p>
                         <span>></span>
@@ -233,282 +130,303 @@
     <section class="layout">
         <div class="layoutRight">
 
-            <div class="tab">
+            <h2 style="text-align: center;">ALARM</h2>
 
-                <!-- <h1>Customer Dashboards</h1> -->
-                <button class="tablinks" onclick="openTab(event, 'Current')" id="defaultOpen">Current</button>
-                <button class="tablinks" onclick="openTab(event, 'Historic')" id="HistoricTab">Historic</button>
-                <!-- <button class="tablinks" onclick="openTab(event, 'Heat Map')">Heat Map</button> -->
-                <!-- <button class="tablinks" onclick="openTab(event, 'energy-performance')">Energy Performance</button> -->
-
-                <input id="myInput-cust" type="text" placeholder="Select customer">
-                <div id="myDropdown-cust" class="dropdown-content"></div>
-                <!-- <select id="myInput-cust" placeholder="Select customer">
-                    <option disabled selected>Select customer</option>
-                </select>
-                <div id="myDropdown-cust" class="dropdown-content"></div> -->
-
-                <label for="labelSelectortenant"></label>
-                <select id="labelSelectortenant">
-                    <option value="">Select device</option>
-                </select>
-                <div id="wifiSignal">
-                    <img id="wifistrength" src=" " alt="" style="height: 35px; margin-right: 10px;" title="">
+            <div class="up">
+                <div class="head-search">
+                    <form action="">
+                        <input type="text" id="search" placeholder="Search">
+                    </form>
+                </div>
+                <div class="head-name">
+                    <button class="addDeviceBtn" id="e-open-popup"><img src="../images/filter.png" alt="profileImage"
+                            title="Filter" style="width: 28px;"></button>
+                    <button class="addDeviceBtn" id="open-popup"><img src="../images/settings.png" alt="profileImage"
+                            title="Alarm Settings" style="width: 28px;"></button>
                 </div>
             </div>
-            <div id="Current" class="tabcontent">
-                <div id="resultScanCurvy"></div>
-                <div class="container-curvy">
-                    <div class="iv-curve">
-                        <div class="download-button-container">
-                            <button class="button" id="scanButton">Scan</button>
-                            <div class="last-update"><span id="lastUpdated"></span></div>
-                            <button id="downloadButton">
-                                <iconify-icon icon="line-md:download-loop" style="color: #452f2f;" width="40"
-                                    height="40"></iconify-icon>
-                            </button>
-                        </div>
-                        <div id="chart-curvy"></div>
-                        <div class="label-curve">
-                            <label for="toggleSecondaryAxis">P-V curve:</label>
-                            <input type="checkbox" id="toggleSecondaryAxis" style="width: 13px;">
-                        </div>
-                    </div>
-                    <div class="card-data">
-                        <div class="card-heading">Open circuit voltage</div>
-                        <!-- <div class="sparkline-chart" id="sparkline-image-voc"></div> -->
-                        <img id="sparkline-image-voc" src="" alt="">
-                    </div>
-                    <div class="card-data">
-                        <div class="card-heading">Short circuit current</div>
-                        <!-- <div id="sparkline-image-isc"></div> -->
-                        <img id="sparkline-image-isc" src="" alt="">
-                    </div>
-                    <div class="card-data">
-                        <div class="card-heading">Fill Factor</div>
-                        <!-- <div id="sparkline-image-ff"></div> -->
-                        <img id="sparkline-image-ff" src="" alt="">
-                    </div>
-                    <div class="card-data">
-                        <div class="card-heading">Voltage at maximum point</div>
-                        <!-- <div id="sparkline-image-vmp"></div> -->
-                        <img id="sparkline-image-vmp" src="" alt="">
 
-                    </div>
-                    <div class="card-data">
-                        <div class="card-heading">Current at maximum point</div>
-                        <!-- <div id="sparkline-image-imp"></div> -->
-                        <img id="sparkline-image-imp" src="" alt="">
-                    </div>
-                    <div class="card-data">
-                        <div class="card-heading">Power at maximum point</div>
-                        <!-- <div id="sparkline-image-pmp"></div> -->
-                        <img id="sparkline-image-pmp" src="" alt="">
-                    </div>
-                    <div class="card-data">
-                        <div class="card-heading">Operating Voltage</div>
-                        <!-- <div id="sparkline-image-vop"></div> -->
-                        <img id="sparkline-image-vop" src="" alt="">
+            <div id="popup" class="popup">
+                <div class="popup-content">
+                    <!-- Popup content goes here -->
 
+                    <div class="alertTop">
+                        <div class="innerAlertTop"><img src="../images/white-setting1.png" alt="logo"></div>
+                        <span class="close" id="close-popup">✖</span>
                     </div>
-                    <div class="card-data">
-                        <div class="card-heading">Operating Current</div>
-                        <!-- <div id="sparkline-image-iop"></div> -->
-                        <img id="sparkline-image-iop" src="" alt="">
+
+                    <div class="alertCont outer_msg">
+                        <div class="message">
+                            <p>You can enable or disable the alarm types as per your requirements.</p>
+                            <br>
+                            <div class="input-field" style="padding-bottom: 0px;">
+                                <select id="units" name="units">
+                                    <option value="" disabled selected hidden style="color: grey;">Device name</option>
+                                </select>
+                            </div>
+
+                            <p id="saveStatus" style="color: #8bc63f; margin-bottom: 14px;"></p>
+
+                            <div class="grid-container" style="width: 100%;" id="gridContainer">
+                                <!-- <div class="grid-item left-allign text-color">Device inactive</div>
+                                <div class="grid-item right-allign text-color">
+                                    <div class="container">
+                                        <label class="switch" for="switch1">
+                                            <input type="checkbox" id="switch1" class="switch-input">
+                                            <span class="switch-label" data-on="On" data-off="Off"></span>
+                                            <span class="switch-handle"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="grid-item left-allign text-color">Fault code1</div>
+                                <div class="grid-item right-allign text-color">
+                                    <div class="container">
+                                        <label class="switch" for="switch2">
+                                            <input type="checkbox" id="switch2" class="switch-input">
+                                            <span class="switch-label" data-on="On" data-off="Off"></span>
+                                            <span class="switch-handle"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="grid-item left-allign text-color">Shading issue</div>
+                                <div class="grid-item right-allign text-color">
+                                    <div class="container">
+                                        <label class="switch" for="switch3">
+                                            <input type="checkbox" id="switch3" class="switch-input">
+                                            <span class="switch-label" data-on="On" data-off="Off"></span>
+                                            <span class="switch-handle"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="grid-item left-allign text-color">Problem with inverter</div>
+                                <div class="grid-item right-allign text-color">
+                                    <div class="container">
+                                        <label class="switch" for="switch4">
+                                            <input type="checkbox" id="switch4" class="switch-input">
+                                            <span class="switch-label" data-on="On" data-off="Off"></span>
+                                            <span class="switch-handle"></span>
+                                        </label>
+                                    </div>
+                                </div> -->
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-data">
-                        <div class="card-heading">Operating Power</div>
-                        <!-- <div id="sparkline-image-pop"></div> -->
-                        <img id="sparkline-image-pop" src="" alt="">
-                    </div>
-                    <div class="card-data">
-                        <div class="card-heading">Measured cell temperature</div>
-                        <!-- <div id="sparkline-image-temperature"></div> -->
-                        <img id="sparkline-image-temperature" src="" alt="">
-                    </div>
-                    <div class="card-data">
-                        <div class="card-heading">Measured Irradiance</div>
-                        <!-- <div id="sparkline-image-irradiance"></div> -->
-                        <img id="sparkline-image-irradiance" src="" alt="">
-                    </div>
-                    <div class="card-data">
-                        <div class="card-heading">Performance Factor</div>
-                        <!-- <div id="sparkline-image-perfromance-factor"></div> -->
-                        <img id="sparkline-image-perfromance-factor" src="" alt="">
+
+                    <div style="width: 90%">
+
+                        <form id="popup-form" class="form4">
+                            <!-- <input type="hidden" id="switch1State" name="switch1" value="Off">
+                            <input type="hidden" id="switch2State" name="switch2" value="Off">
+                            <input type="hidden" id="switch3State" name="switch3" value="Off">
+                            <input type="hidden" id="switch3State" name="switch4" value="Off"> -->
+                            <input type="submit" value="Submit" id="submitSetting">
+                            <!-- <button type="submit">Submit</button> -->
+                        </form>
+
                     </div>
                 </div>
             </div>
-            <div id="Historic" class="tabcontent">
-                <div class="grid-containerD">
-                    <div class="grid-itemD mergGrid3">
-                        <div class="flexD">
-                            <p id="label-date">Date:&nbsp;&nbsp;</p>
-                            <button id="date-backward" class="datebuttons"><img width="15" height="15"
-                                    src="https://img.icons8.com/metro/26/back.png" alt="back" /></button>
-                            &nbsp;<input type="date" id="datepicker" placeholder="yyyy/mm/dd">&nbsp;
-                            <button id="date-forward" class="datebuttons"><img class="rotate180" width="15" height="15"
-                                    src="https://img.icons8.com/metro/26/back.png" alt="back" /></button>
-                        </div>
-                    </div>
-                    <div class="grid-itemD"></div>
-                    <div class="grid-itemD"></div>
-                    <div class="grid-itemD"></div>
-                    <div class="grid-itemD"></div>
-                    <div class="grid-itemD"></div>
-                    <div class="grid-itemD"></div>
-                    <div class="grid-itemD">
-                        <input type="range" id="timestampSlider" min="0" max="30" step="1" value="0">
-                        <button id="replay-btn"><iconify-icon icon="ic:baseline-replay"
-                                style="color: blue;"></iconify-icon></button>
-                    </div>
-                    <div class="grid-itemD"></div>
-                    <div class="grid-itemD"></div>
-                    <div class="grid-itemD"></div>
-                    <div class="grid-itemD"></div>
-                    <div class="grid-itemD"></div>
-                    <div class="grid-itemD"></div>
-                    <div class="grid-itemD subgrid-containerD">
-                        <div class="subgrid-itemD"><button class="btn-control" id="prev-btn">⬅️</button></div>
-                        <div class="subgrid-itemD"><button class="btn-control" id="play-btn">▶️</button></div>
-                        <div class="subgrid-itemD"><button class="btn-control" id="next-btn">➡️</button></div>
-                    </div>
-                </div>
-                <div class="historic-container-curvy">
-                    <div class="iv-curve">
-                        <div class="historic-TimeStamp"><span id="historicTimeStampData"></span></div>
-                        <div id="historicChartCurvy"></div>
-                        <div class="label-curve-his">
-                            <label for="fixYAxis">Lock the Y-axis:</label>
-                            <input type="checkbox" id="fixYAxis">
-                        </div>
-                    </div>
-                    <div class="card-data">
-                        <div class="card-heading">Open circuit voltage</div>
-                        <div class="sparkline-chart" id="sparkline-image-historical-voc"></div>
-                        <!-- <img id="sparkline-image-historical-voc" src="" alt=""> -->
-                    </div>
-                    <div class="card-data">
-                        <div class="card-heading">Short circuit current</div>
-                        <div class="sparkline-chart" id="sparkline-image-historical-isc"></div>
-                        <!-- <img id="sparkline-image-historical-isc" src="" alt=""> -->
-                    </div>
-                    <div class="card-data">
-                        <div class="card-heading">Fill Factor</div>
-                        <div class="sparkline-chart" id="sparkline-image-historical-ff"></div>
-                        <!-- <img id="sparkline-image-historical-ff" src="" alt=""> -->
-                    </div>
-                    <div class="card-data">
-                        <div class="card-heading">Voltage at maximum point</div>
-                        <div class="sparkline-chart" id="sparkline-image-historical-vmp"></div>
-                        <!-- <img id="sparkline-image-historical-vmp" src="" alt=""> -->
-                    </div>
-                    <div class="card-data">
-                        <div class="card-heading">Current at maximum point</div>
-                        <div class="sparkline-chart" id="sparkline-image-historical-imp"></div>
-                        <!-- <img id="sparkline-image-historical-imp" src="" alt=""> -->
-                    </div>
-                    <div class="card-data">
-                        <div class="card-heading">Power at maximum point</div>
-                        <div class="sparkline-chart" id="sparkline-image-historical-pmp"></div>
-                        <!-- <img id="sparkline-image-historical-pmp" src="" alt=""> -->
-                    </div>
-                    <div class="card-data">
-                        <div class="card-heading">Operating Voltage</div>
-                        <div class="sparkline-chart" id="sparkline-image-historical-vop"></div>
-                        <!-- <img id="sparkline-image-historical-vop" src="" alt=""> -->
-                    </div>
-                    <div class="card-data">
-                        <div class="card-heading">Operating Current</div>
-                        <div class="sparkline-chart" id="sparkline-image-historical-iop"></div>
-                        <!-- <img id="sparkline-image-historical-iop" src="" alt=""> -->
-                    </div>
-                    <div class="card-data">
-                        <div class="card-heading">Operating Power</div>
-                        <div class="sparkline-chart" id="sparkline-image-historical-pop"></div>
-                        <!-- <img id="sparkline-image-historical-pop" src="" alt=""> -->
+
+            <div id="e-popup" class="popup">
+                <div class="popup-content">
+                    <!-- Popup content goes here -->
+
+                    <div class="alertTop">
+                        <div class="innerAlertTop"><img src="../images/white-filter2.png" alt="logo"></div>
+                        <span class="close" id="e-close-popup">✖</span>
                     </div>
 
-                    <div class="card-data">
-                        <div class="card-heading">Measured Cell Temperature</div>
-                        <div class="sparkline-chart" id="sparkline-image-historical-tcell"></div>
-                        <!-- <img id="sparkline-image-historical-tcell" src="" alt=""> -->
+                    <div class="alertCont" style="margin-bottom: 10px">
+                        <div class="message">
+                            <span class="icon" style="display: none;"></span>
+                            Filter alarms based on its status.
+                        </div>
                     </div>
-                    <div class="card-data">
-                        <div class="card-heading">Measured Irradiance</div>
-                        <div class="sparkline-chart" id="sparkline-image-historical-Geff"></div>
-                        <!-- <img id="sparkline-image-historical-Geff" src="" alt=""> -->
+
+                    <div style="width: 90%">
+                        <form id="editDeviceForm" class="form4">
+                            <div class="grid-container" style="width: 80%;">
+                                <div class="grid-item left-allign text-color">
+                                    <input type="checkbox" id="active" class="checkedInp" checked>
+                                </div>
+                                <div class="grid-item left-allign text-color">
+                                    <label for="active" class="filterOption">Active</label>
+                                </div>
+                                <div class="grid-item left-allign text-color">
+                                    <input type="checkbox" id="clear" class="checkedInp" unchecked>
+                                </div>
+                                <div class="grid-item left-allign text-color">
+                                    <label for="clear" class="filterOption">Clear</label>
+                                </div>
+                                <div class="grid-item left-allign text-color">
+                                    <input type="checkbox" id="acknowledge" class="checkedInp" unchecked>
+                                </div>
+                                <div class="grid-item left-allign text-color">
+                                    <label for="acknowledge" class="filterOption">Acknowledge</label>
+                                </div>
+                                <div class="grid-item left-allign text-color">
+                                    <input type="checkbox" id="unacknowledge" class="checkedInp" unchecked>
+                                </div>
+                                <div class="grid-item left-allign text-color">
+                                    <label for="unacknowledge" class="filterOption">Unacknowledge</label>
+                                </div>
+                            </div>
+
+                            <input type="submit" value="Submit" id="filterSubmit">
+                        </form>
                     </div>
-                    <div class="card-data">
-                        <div class="card-heading">Performance Factor</div>
-                        <div class="sparkline-chart" id="sparkline-image-historical-pf"></div>
-                        <!-- <img id="historic-sparkline-image-pf" src="" alt=""> -->
-                    </div>
-                </div>
-                <div class="minmax-container">
-                    <!-- <label for="dropdown-content"></label> -->
-                    <select id="dropdown-content" name="dropdowncontent">
-                        <option value="Default">Find min/max:</option>
-                        <option value="Vmp">Voltage at maximum point</option>
-                        <option value="Imp">Current at maximum point</option>
-                        <option value="Pmp">Power at maximum point</option>
-                        <option value="V">Voltage at Operating point</option>
-                        <option value="I">Current at Operating point</option>
-                        <option value="P">Power at Operating point</option>
-                        <option value="Voc">Open circuit voltage</option>
-                        <option value="Isc">Short circuit current</option>
-                        <option value="FF">Fill factor</option>
-                        <option value="simI">Measured Irradiance</option>
-                        <option value="SimCT">Measured cell temperature</option>
-                        <option value="PF">Performance Factor</option>
-                    </select>
-                    <button class="minmax-control" id="maxbtn">⬆️</button>
-                    <button class="minmax-control" id="minbtn">⬇️</button>
-                </div>
-                <div id="toggle-container"></div>
-                <div class="container-historic-graph">
-                    <div id="parameter-graph"></div>
                 </div>
             </div>
+
+            <ol class="list list-view-filter" id="table-body">
+                <!-- <li>
+                    <div class="grid-container">
+                        <div class="grid-item left-allign text-bigger">PVgo_E5C46Y</div>
+                        <div class="grid-item right-allign name-length">28/03/2024, 10:17:17 am</div>
+                        <div class="grid-item left-allign ">High Temperature</div>
+                        <div class="grid-item right-allign">Critical</div>
+                        <div class="grid-item msg">
+                            <div class="sub_msg">Lorem ipsum, dolor sit amet consectetur adipisicing elit. Nam quidem
+                                doloribus voluptatem repellat enim nemo qui. Fugiat autem molestias nihil commodi
+                                assumenda molestiae! Ducimus amet consequatur non quasi illum consequuntur.</div>
+                        </div>
+                    </div>
+                    <br>
+                    <div class="grid-container">
+                        <div class="grid-item left-allign text-bigger">Active Unacknowledged</div>
+                        <div class="grid-item right-allign"><button class="btn-alarm">Acknowledge</button> <button
+                                class="btn-alarm">Clear</button> </div>
+                    </div>
+                </li>
+
+                <li>
+                    <div class="grid-container">
+                        <div class="grid-item left-allign text-bigger">PVgo_E5C46Y</div>
+                        <div class="grid-item right-allign name-length">28/03/2024, 10:17:17 am</div>
+                        <div class="grid-item left-allign ">High Temperature</div>
+                        <div class="grid-item right-allign">Critical</div>
+                        <div class="grid-item msg">
+                            <div class="sub_msg">Saare jahan se acha hindusthan hamara.</div>
+                        </div>
+                    </div>
+                    <br>
+                    <div class="grid-container">
+                        <div class="grid-item left-allign text-bigger">Active Unacknowledged</div>
+                        <div class="grid-item right-allign"><button class="btn-alarm">Acknowledge</button> <button
+                                class="btn-alarm">Clear</button> </div>
+                    </div>
+                </li>
+
+                <li>
+                    <div class="grid-container">
+                        <div class="grid-item left-allign text-bigger">PVgo_E5C46Y</div>
+                        <div class="grid-item right-allign name-length">28/03/2024, 10:17:17 am</div>
+                        <div class="grid-item left-allign ">High Temperature</div>
+                        <div class="grid-item right-allign">Critical</div>
+                        <div class="grid-item msg">
+                            <div class="sub_msg">Satya meva jayate. Jana gana mana adinayaka jaya he. Bharata bhagya
+                                vidhata.</div>
+                        </div>
+                    </div>
+                    <br>
+                    <div class="grid-container">
+                        <div class="grid-item left-allign text-bigger">Active Unacknowledged</div>
+                        <div class="grid-item right-allign"><button class="btn-alarm">Acknowledge</button> <button
+                                class="btn-alarm">Clear</button> </div>
+                    </div>
+                </li> -->
+
+                <!-- <li>
+                <div class="grid-container">
+                    <div class="grid-item left-allign text-bigger">C0:D1:T2:F3:E5:R6</div>
+                    <div class="grid-item right-allign name-length">Critical</div>
+                    <div class="grid-item left-allign ">Bad Weather</div>
+                    <div class="grid-item right-allign">Cleared Acknowledged</div>
+                    <div class="grid-item left-allign">monishaputhanveet@gmail.com</div>
+                    <div class="grid-item right-allign">6165789000</div>
+                </div>
+            </li> -->
+            </ol>
+
+            <div id="pagination">
+                <button id="prev-button" class="btn-lypage">&lt;&lt;</button>
+                <div id="pagination-numbers"></div>
+                <button id="next-button" class="btn-lypage">&gt;&gt;</button>
+            </div>
+
+            <div class="topbarContent">
+                <label for="items-per-page">Items Per Page:</label>
+                <input type="number" id="items-per-page" value="5">
+            </div>
+
         </div>
+        <div id="confirmContainer"></div>
+        <div id="alertContainer"></div>
     </section>
 
-    <div id="confirmContainer"></div>
-    <div id="alertContainer"></div>
-
     <!-- <div>
-        <form class="logoutFloat">
-            <button type="submit" id="logoutButton">Logout</button>
-        </form>
-    </div> -->
+   <form class="logoutFloat">
+        <button type="submit" id="logoutButton">Logout</button>
+    </form>
+</div> -->
+
+    <script src="../cordova.js"></script>
+    <script src="../js/index.js"></script>
 
     <script src="../js/respLayout.js"></script>
     <script type="module" src="../js/name.js"></script>
     <script type="module" src="../js/logout.js"></script>
-    <script type="module" src="../js/dashboardTenant.js"></script>
-    <script src="../js/respLayout.js"></script>
-    <script type="module" src="../js/name.js"></script>
-    <script type="module" src="../js/logout.js"></script>
+
+    <!-- <script>
+        // JavaScript to show the popup
+        document.getElementById("open-popup").addEventListener("click", function () {
+            document.getElementById("popup").style.display = "block";
+        });
+
+        // JavaScript to hide the popup
+        document.getElementById("close-popup").addEventListener("click", function () {
+            document.getElementById("popup").style.display = "none";
+        });
+
+    </script> -->
     <script>
-        function openTab(evt, tabName) {
-            // Declare all variables
-            var i, tabcontent, tablinks;
-            // Get all elements with class="tabcontent" and hide them
-            tabcontent = document.getElementsByClassName("tabcontent");
-            for (i = 0; i < tabcontent.length; i++) {
-                tabcontent[i].style.display = "none";
-            }
-            // Get all elements with class="tablinks" and remove the class "active"
-            tablinks = document.getElementsByClassName("tablinks");
-            for (i = 0; i < tablinks.length; i++) {
-                tablinks[i].className = tablinks[i].className.replace(" active", "");
-            }
-            // Show the current tab, and add an "active" class to the button that opened the tab
-            document.getElementById(tabName).style.display = "block";
-            evt.currentTarget.className += " active";
-        };
+        // document.addEventListener('DOMContentLoaded', function () {
+        //     const switchInputs = document.querySelectorAll('.switch-input');
 
-        document.getElementById("defaultOpen").click();
+        //     // Update hidden input value when switch changes
+        //     switchInputs.forEach(function (input) {
+        //         input.addEventListener('change', function () {
+        //             const switchNumber = this.getAttribute('id').replace('switch', '');
+        //             document.getElementById('switch' + switchNumber + 'State').value = this.checked ? "On" : "Off";
+        //         });
+        //     });
+
+        //     // Submit form
+        //     document.getElementById('popup-form').addEventListener('submit', function (event) {
+        //         event.preventDefault();
+        //         const formData = new FormData(this);
+        //         for (const pair of formData.entries()) {
+        //             console.log(pair[0], pair[1]);
+        //         }
+        //     });
+        // });
     </script>
+
+    <script>
+
+        document.getElementById("e-open-popup").addEventListener("click", function () {
+            document.getElementById("e-popup").style.display = "block";
+        });
+
+        document.getElementById("e-close-popup").addEventListener("click", function () {
+            document.getElementById("e-popup").style.display = "none";
+        });
+
+    </script>
+
+    <script type="module" src="../js/alarmSettings.js"></script>
+
+
 </body>
 
 </html>

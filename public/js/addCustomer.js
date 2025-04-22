@@ -1,4 +1,4 @@
-import { getToken, setCustomerId, createAlert } from "./otherFunc.js";
+import { getToken, fetchWithToken, setCustomerId, createAlert } from "./otherFunc.js";
 
 const formC = document.getElementById("signinCustomer");
     
@@ -18,7 +18,6 @@ const formC = document.getElementById("signinCustomer");
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify(jsonData),
             };
@@ -128,13 +127,12 @@ const formC = document.getElementById("signinCustomer");
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify(jsonData),
             };
     
         try {
-            const response = await fetch(url, option);
+            const response = await fetchWithToken(url, option);
     
             if (response.ok) {
             const json = await response.json();

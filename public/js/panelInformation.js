@@ -1,4 +1,4 @@
-import { getToken, createAlert } from "./otherFunc.js";
+import { getToken, fetchWithToken, createAlert } from "./otherFunc.js";
 
 let panelManufacturers = [];
 let panelModels = [];
@@ -38,13 +38,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(requestData),
     };
 
     try {
-        const response = await fetch("/getuniquepanelmanufacturer", requestOptions);
+        const response = await fetchWithToken("/getuniquepanelmanufacturer", requestOptions);
         const data = await response.json();
 
         // Extract panel manufacturers from the response
@@ -169,12 +168,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify(requestPanelModels),
         };
         try {
-            const response = await fetch("/getmodel", requestPanelModelsOptions);
+            const response = await fetchWithToken("/getmodel", requestPanelModelsOptions);
             const data = await response.json();
 
             // Extract panel models from the response
@@ -193,12 +191,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify(requestPanelModels),
         };
         try {
-            const response = await fetch("/getpaneldata", requestPanelModelsOptions);
+            const response = await fetchWithToken("/getpaneldata", requestPanelModelsOptions);
             const data = await response.json();
             inputPower.value = Number(data.map(item => item.power_w));
             inputCells.value = Number(data.map(item => item.series_cell));
@@ -223,11 +220,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(getUserData),
     };
-    const responseData = await fetch("/getsimulationStatus", optiongetUserData);
+    const responseData = await fetchWithToken("/getsimulationStatus", optiongetUserData);
     const responseDataJson = await responseData.json();
 
     for (let item of responseDataJson) {
@@ -310,11 +306,10 @@ document.addEventListener("DOMContentLoaded", async () => {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        'Authorization': `Bearer ${token}`,
                     },
                     body: JSON.stringify(dataPanelInfo),
                 };
-                const responseGetParam = fetch("/updatePanelAttribute", dataPanelInfoOption)
+                const responseGetParam = fetchWithToken("/updatePanelAttribute", dataPanelInfoOption)
                     .then(response => {
                         responseStatus = response.status;
                         if (responseStatus === 200) {

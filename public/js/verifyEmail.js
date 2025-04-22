@@ -95,7 +95,7 @@ async function verifyCode(event) {
             const title = json.title;
             const customerOrInstaller = json.customerOrInstaller;
 
-            ///////////ding dong bell
+            ///////////
 
             const jsonData = { title };
 

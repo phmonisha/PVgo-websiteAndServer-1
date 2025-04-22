@@ -1,10 +1,10 @@
 const axios = require('axios');
 require('dotenv').config();
-const { Pool } = require('pg');
+const { Pool, Client } = require('pg');
 const WebSocket = require('ws');
 
 const pool = new Pool({
-  host: "10.0.1.6",
+  host: "mytb-curvy",
   user: "thingsboard",
   port: 5432,
   password: "thingsboard",
@@ -12,6 +12,15 @@ const pool = new Pool({
   max: 2,
   connectionTimeoutMillis: 0,
   idleTimeoutMillis: 0
+});
+
+// Dedicated client for listening to notifications
+const listenerClient = new Client({
+  host: "mytb-curvy",
+  user: "thingsboard",
+  port: 5432,
+  password: "thingsboard",
+  database: "thingsboard"
 });
 
 const currentTime = new Date();
@@ -24,6 +33,40 @@ const passwordAdmin = process.env.password;
 
 const usernameTenant = process.env.usernameTenant;
 const passwordTenant = process.env.passwordTenant;
+
+
+const storeRefreshToken = async (email, refreshToken) => {
+  try {
+    const sqlQuery37 = `UPDATE public.verify_email SET refresh_token = $1 WHERE email = $2`;
+    await pool.query(sqlQuery37, [refreshToken, email]);
+    // console.log(`Refresh token stored for ${email}`);
+  } catch (error) {
+    console.error('Error storing refresh token:', error);
+    throw error;
+  }
+}
+
+const getStoredRefreshToken = async (email) => {
+  try {
+    const sqlQuery38 = `SELECT refresh_token FROM public.verify_email WHERE email = $1`;
+    const result = await pool.query(sqlQuery38, [email]);
+    return result.rows[0]?.refresh_token || null;
+  } catch (error) {
+    console.error('Error fetching refresh token:', error);
+    throw error;
+  }
+}
+
+const revokeRefreshToken = async (email) => {
+  try {
+    const sqlQuery39 = `UPDATE public.verify_email SET refresh_token = NULL WHERE email = $1`;
+    await pool.query(sqlQuery39, [email]);
+    // console.log(`Refresh token revoked for ${email}`);
+  } catch (error) {
+    console.error('Error revoking refresh token:', error);
+    throw error;
+  }
+}
 
 const getJwtSysAdmin = async () => {
   try {
@@ -183,11 +226,11 @@ const createCustomer = async (customerData, jwtTenantToken, tenantId) => {
       'X-Authorization': `Bearer ${jwtTenantToken}`,
     };
 
-    console.log('customerData: ', customerData);
+    // console.log('customerData: ', customerData);
 
     const response = await axios.post(url, customerData, { headers });
     const newCustomerDataInfo = await response.data;
-    console.log('New customer created:', newCustomerDataInfo);
+    // console.log('New customer created:', newCustomerDataInfo);
 
     url = `${thingsboardHost}/api/plugins/telemetry/CUSTOMER/${newCustomerDataInfo.id.id}/attributes/SERVER_SCOPE`;
 
@@ -200,17 +243,16 @@ const createCustomer = async (customerData, jwtTenantToken, tenantId) => {
 
     //////////
 
-
     url = `${thingsboardHost}/api/relation`;
     let installerType = 'NA';
 
     if (tenantId === null || tenantId === undefined) {
-      console.log('abc');
+      // console.log('abc');
       tenantId = "0f7189f0-631b-11ee-9c67-638bd1419106";
       title = "MWP Default Installer";
     }
     else {
-      console.log('xyz');
+      // console.log('xyz');
       const sqlQuery6 = `select title from customer where id = '${tenantId}'`;
       const res = await pool.query(sqlQuery6);
       //console.log('res.rows: ', res.rows);
@@ -235,8 +277,8 @@ const createCustomer = async (customerData, jwtTenantToken, tenantId) => {
     };
 
     const relationsCreation = await axios.post(url, relations, { headers });
-    console.log('relationsCreation.data: ', relationsCreation.data);
-    console.log('installerType: ', installerType);
+    // console.log('relationsCreation.data: ', relationsCreation.data);
+    // console.log('installerType: ', installerType);
 
     if (relationsCreation.data === '' && installerType === 'nonDefault') {
       const relations1 = {
@@ -256,7 +298,7 @@ const createCustomer = async (customerData, jwtTenantToken, tenantId) => {
       };
 
       const relationsCreationDefault = await axios.post(url, relations1, { headers });
-      console.log({ relationsCreationDefault });
+      // console.log({ relationsCreationDefault });
     }
 
     if (attributeCreation.data === '' && relationsCreation.data === '') {
@@ -279,7 +321,7 @@ const createCustomer = async (customerData, jwtTenantToken, tenantId) => {
     }
 
   } catch (error) {
-    console.log('error from creat customer function: ', error);
+    // console.log('error from creat customer function: ', error);
     throw error;
   }
 };
@@ -399,8 +441,8 @@ const createTenant = async (tenantData, jwtTenantToken) => {
   try {
     let url = `${thingsboardHost}/api/customer`;
 
-    console.log({ jwtTenantToken });
-    console.log({ tenantData });
+    // console.log({ jwtTenantToken });
+    // console.log({ tenantData });
 
     let headers = {
       'Content-Type': 'application/json',
@@ -408,7 +450,7 @@ const createTenant = async (tenantData, jwtTenantToken) => {
     };
 
     const response = await axios.post(url, tenantData, { headers });
-    console.log('New tenant ID response:', response);
+    // console.log('New tenant ID response:', response);
     const newTenantDataInfo = await response.data;
     //console.log('New tenant ID:', newTenantDataInfo.id.id);
 
@@ -420,7 +462,7 @@ const createTenant = async (tenantData, jwtTenantToken) => {
 
     const attributeCreation = await axios.post(url, attribute, { headers });
 
-    console.log('attributeCreation.data: ', attributeCreation.data);
+    // console.log('attributeCreation.data: ', attributeCreation.data);
 
     if (attributeCreation.data === '') {
       return newTenantDataInfo;
@@ -497,7 +539,7 @@ const getTenantEntityList = async (pageIdentifier, jwtTenantToken, installerCust
         const res = await pool.query(sqlQuery3);
         thingsboardResponse = res.rows;
 
-        console.log('thingsboardResponse: ', thingsboardResponse);
+        // console.log('thingsboardResponse: ', thingsboardResponse);
 
         modifiedResponse = {
           data: thingsboardResponse,
@@ -667,6 +709,44 @@ const getCustomerEntityList = async (pageIdentifier, jwtTenantToken, customerId)
         hasNext: thingsboardResponse.data.hasNext,
       };
     }
+    else if (pageIdentifier === 'customerNotification') {
+
+      const sqlQuery24 = `SELECT a.id, d.id as device_id, d.label, t.type, A.CREATED_TIME, a.severity, t.definition, a.acknowledged, a.cleared, CASE WHEN (a.acknowledged = false AND a.cleared = false) THEN 'Active Unacknowledged' WHEN (a.acknowledged = true AND a.cleared = false) THEN 'Active Acknowledged' WHEN (a.acknowledged = false AND a.cleared = true) THEN 'Cleared Unacknowledged' WHEN (a.acknowledged = true AND a.cleared = true) THEN 'Cleared Acknowledged' END AS status FROM public.custom_alarm a, custom_alarm_type t, device d where a.customer_id = '${customerId}' and a.device_id = d.id and a.code = t.code  AND A.CLEARED != FALSE
+  union
+  
+select distinct '00000000-0000-0000-0000-000000000000'::uuid ID,
+	'00000000-0000-0000-0000-000000000000'::uuid AS DEVICE_ID,
+	n.type AS LABEL,
+	n.subject AS TYPE,
+	n.CREATED_TIME/1000 AS CREATED_TIME,
+	'minor' SEVERITY,
+	n.body DEFINITION,
+	true ACKNOWLEDGED,
+	true CLEARED, 
+	null status
+	from notification n
+where type = 'GENERAL'
+  and recipient_id in (select id from tb_user
+where customer_id = '${customerId}');`;
+      res = await pool.query(sqlQuery24);
+      //console.log(res.rows);
+
+      modifiedResponse = {
+        data: res.rows.map(item => ({
+          label: item.label,
+          type: item.type,
+          createdTime: item.created_time,
+          severity: item.severity,
+          definition: item.definition,
+          status: item.status,
+          acknowledged: item.acknowledged,
+          cleared: item.cleared,
+          id: item.id,
+          deviceId: item.device_id,
+        })),
+        hasNext: false,
+      };
+    };
     //console.log({ modifiedResponse });
     return modifiedResponse;
   } catch (error) {
@@ -693,6 +773,7 @@ const getCustomerName = async (customerID, jwtTenantToken) => {
 };
 
 const getDeviceName = async (deviceId, jwtTenantToken) => {
+
   try {
     const headers = {
       'Content-Type': 'application/json',
@@ -701,9 +782,12 @@ const getDeviceName = async (deviceId, jwtTenantToken) => {
 
     const deviceName = await axios.get(`${thingsboardHost}/api/device/${deviceId}`, { headers });
     return deviceName.data.name;
-  } catch (error) {
+
+  }
+  catch (error) {
     console.error('2)Error creating customer:', error.message);
   }
+
 };
 
 const getAssetProfileName = async (assetProfileId, jwtTenantToken) => {
@@ -749,10 +833,12 @@ const homeDetails = async (id, jwtTenantToken, pageIdentifier) => {
     if (pageIdentifier === 'tenantHome') {
       const sqlQuery8 = `WITH mm AS (SELECT r.from_id FROM relation r, customer c1 WHERE r.from_type = 'CUSTOMER' AND (r.additional_info::json) ->> 'installerGroup' = c1.title AND c1.id = '${id}'), customer AS (SELECT count(*) customer FROM customer,mm WHERE id = mm.from_id), device AS (SELECT count(*) device FROM ( SELECT device_profile_id FROM device,mm WHERE device_profile_id = 'fa909e50-2204-11ef-8d93-e52196e6d77f' AND customer_id = mm.from_id) d), alarm AS (select count(*) alarm from alarm, mm where customer_id = mm.from_id), asset AS (select count(*) asset from asset, mm where customer_id = mm.from_id) select * from customer,device, alarm, asset`;
       res = await pool.query(sqlQuery8);
+      // console.log('tHome res.rows:', res.rows);
     }
     else if (pageIdentifier === 'customerHome') {
       const sqlQuery9 = `WITH mm AS (SELECT id from customer where id = '${id}'), device AS (SELECT count(*) device FROM ( SELECT device_profile_id FROM device,mm WHERE device_profile_id = 'fa909e50-2204-11ef-8d93-e52196e6d77f' AND customer_id = mm.id) d), alarm AS (select count(*) alarm from alarm, mm where customer_id = mm.id), asset AS (select count(*) asset from asset, mm where customer_id = mm.id) select * from device, alarm, asset`;
       res = await pool.query(sqlQuery9);
+      // console.log('cHome res.rows:', res.rows);
     }
 
     const entityCount = res.rows;
@@ -784,7 +870,7 @@ const unassignDevice = async (deviceId, jwtTenantToken) => {
     };
 
     const deviceDetails = await axios.delete(`${thingsboardHost}/api/customer/device/${deviceId}`, { headers });
-    console.log('deviceDetails.data.label: ', deviceDetails.data.label);
+    // console.log('deviceDetails.data.label: ', deviceDetails.data.label);
 
     if (deviceDetails.data.label !== '') {
       const res = await pool.query(sqlQuery23);
@@ -1426,7 +1512,7 @@ const assignDevice = async (deviceName, jwtTenantToken, customerId) => {
 
 const saveCode = async (toEmail, code) => {
 
-  console.log('toEmail: ', toEmail[0]);
+  // console.log('toEmail: ', toEmail[0]);
 
   const sqlQuery10 = `select count(*) cnt from public.verify_email where email = '${toEmail[0]}' and verify = false`;
   const sqlQuery11 = `INSERT INTO public.verify_email(email, code, verify) VALUES ('${toEmail[0]}', '${code}', false)`;
@@ -1435,7 +1521,7 @@ const saveCode = async (toEmail, code) => {
 
   try {
     const res2 = await pool.query(sqlQuery12);
-    console.log('res2.rows: ', res2.rows);
+    // console.log('res2.rows: ', res2.rows);
 
     if (res2.rows[0].cnt >= '1') {
       return 0;
@@ -1444,25 +1530,25 @@ const saveCode = async (toEmail, code) => {
 
       const res = await pool.query(sqlQuery10);
 
-      console.log('res.rows: ', res.rows);
+      // console.log('res.rows: ', res.rows);
 
       if (res.rows[0].cnt === '0') {
         const res1 = await pool.query(sqlQuery11);
 
-        console.log('res1.rows: ', res1.rows);
+        // console.log('res1.rows: ', res1.rows);
         return 1;
       }
       else if (res.rows[0].cnt === '1') {
         const res3 = await pool.query(sqlQuery13);
 
-        console.log('res3.rows: ', res3.rows);
+        // console.log('res3.rows: ', res3.rows);
         return 2;
       }
 
     }
 
   } catch (error) {
-    console.log('error: ', error);
+    // console.log('error: ', error);
     throw error;
   }
 };
@@ -1470,18 +1556,18 @@ const saveCode = async (toEmail, code) => {
 
 const saveCodePwdReset = async (email, code) => {
 
-  console.log('email: ', email);
+  // console.log('email: ', email);
 
   const sqlQuery12 = `select count(*) cnt from public.verify_email where email = '${email}' and verify = true`;
   const sqlQuery13 = `update public.verify_email set code = '${code}' where email = '${email}' and verify = true`;
 
   try {
     const res2 = await pool.query(sqlQuery12);
-    console.log('res2.rows: ', res2.rows);
+    // console.log('res2.rows: ', res2.rows);
 
     if (res2.rows[0].cnt >= '1') {
       const res1 = await pool.query(sqlQuery13);
-      console.log('res1.rows: ', res1.rows);
+      // console.log('res1.rows: ', res1.rows);
       return 1;
     }
     else {
@@ -1489,21 +1575,21 @@ const saveCodePwdReset = async (email, code) => {
     }
 
   } catch (error) {
-    console.log('error: ', error);
+    // console.log('error: ', error);
     throw error;
   }
 };
 
 const verifyEmail = async (email, code) => {
 
-  console.log('email: ', email);
+  // console.log('email: ', email);
   let success = null;
 
   const sqlQuery14 = `select count(*) cnt from public.verify_email where email = '${email}' and code = '${code}'`;
 
   try {
     const res = await pool.query(sqlQuery14);
-    console.log('res.rows: ', res.rows);
+    // console.log('res.rows: ', res.rows);
 
     if (res.rows[0].cnt === '1') {
       success = true;
@@ -1515,21 +1601,21 @@ const verifyEmail = async (email, code) => {
     return success;
 
   } catch (error) {
-    console.log('error: ', error);
+    // console.log('error: ', error);
     throw error;
   }
 };
 
 const checkIfCustomerExists = async (title) => {
 
-  console.log('title: ', title);
+  // console.log('title: ', title);
   let success = null;
 
   const sqlQuery15 = `select count(*) cnt from customer where title = '${title}'`;
 
   try {
     const res = await pool.query(sqlQuery15);
-    console.log('res.rows: ', res.rows);
+    // console.log('res.rows: ', res.rows);
 
     if (res.rows[0].cnt === '0') {
       success = true;
@@ -1541,35 +1627,35 @@ const checkIfCustomerExists = async (title) => {
     return success;
 
   } catch (error) {
-    console.log('error: ', error);
+    // console.log('error: ', error);
     throw error;
   }
 };
 
 const setVerifyFlagStatus = async (email) => {
 
-  console.log('email: ', email);
+  // console.log('email: ', email);
   let success = null;
 
   const sqlQuery16 = `update public.verify_email set verify = true where email = '${email}'`;
 
   try {
     const res = await pool.query(sqlQuery16);
-    console.log('res.rows: ', res.rows);
+    // console.log('res.rows: ', res.rows);
 
     success = true;
 
     return success;
 
   } catch (error) {
-    console.log('error: ', error);
+    // console.log('error: ', error);
     throw error;
   }
 };
 
 const checkExists = async (email) => {
 
-  console.log('email: ', email);
+  // console.log('email: ', email);
   let state = null;
 
   const sqlQuery34 = `SELECT count(*) cnt FROM public.verify_email where email = '${email}'`;
@@ -1577,11 +1663,11 @@ const checkExists = async (email) => {
 
   try {
     const res = await pool.query(sqlQuery34);
-    console.log('res.rows: ', res.rows);
+    // console.log('res.rows: ', res.rows);
 
     if (res.rows[0].cnt === '1') {
       const res1 = await pool.query(sqlQuery20);
-      console.log('res1.rows: ', res1.rows);
+      // console.log('res1.rows: ', res1.rows);
 
       if (res1.rows[0].cnt === '1') {
         state = 0;
@@ -1597,7 +1683,7 @@ const checkExists = async (email) => {
     return state;
 
   } catch (error) {
-    console.log('error: ', error);
+    // console.log('error: ', error);
     throw error;
   }
 };
@@ -1627,7 +1713,7 @@ const updateAlarmStatus = async (dataObj) => {
     return success;
 
   } catch (error) {
-    console.log('error: ', error);
+    // console.log('error: ', error);
     throw error;
   }
 };
@@ -1693,19 +1779,19 @@ const getAlarmSettings = async (deviceId) => {
 
   //console.log({deviceId});
 
-  const sqlQuery27 = `SELECT long_v FROM public.attribute_kv where entity_id = '${deviceId}' and attribute_type = 'SERVER_SCOPE' and attribute_key = 'alarmSettings'`;
-  const sqlQuery28 = `select type as name, code from custom_alarm_type`;
+  const sqlQuery27 = `SELECT long_v FROM public.attribute_kv where entity_id = '${deviceId}' and attribute_type = 2 and attribute_key = (select key_id from key_dictionary where key = 'alarmSettings')`;
+  const sqlQuery28 = `select type as name, category_code as code from custom_alarm_type	group by type , category_code order by 2`;
 
   let res = null;
   let res1 = null;
 
   try {
     res = await pool.query(sqlQuery28);
-    console.log('res.rows: ', res.rows);
+    // console.log('res.rows: ', res.rows);
     const alarmTypes = res.rows;
 
     res1 = await pool.query(sqlQuery27);
-    console.log('res1.rows: ', res1.rows[0].long_v);
+    // console.log('res1.rows: ', res1.rows[0].long_v);
 
     const statusNumber = res1.rows[0].long_v;
 
@@ -1713,6 +1799,7 @@ const getAlarmSettings = async (deviceId) => {
       const numBits = alarmTypes.length;
 
       const alarms = [];
+
       for (let i = 0; i < numBits; i++) {
         const alarmBit = (statusNumber >> (alarmTypes[i].code - 1)) & 1;
         const alarmType = alarmTypes[i].name;
@@ -1723,12 +1810,12 @@ const getAlarmSettings = async (deviceId) => {
         });
       }
 
-      console.log(alarms);
+      // console.log(alarms);
       return alarms;
     }
   }
   catch (error) {
-    console.log('error: ', error);
+    // console.log('error: ', error);
     throw error;
   }
 };
@@ -1750,9 +1837,9 @@ const setAlarmSettings = async (deviceId, alarmSettings) => {
   try {
     const statusNumber = 4294967295;
     const updatedStatusNumber = resetAlarmBits(statusNumber, alarmSettings);
-    //console.log(updatedStatusNumber);
+    // console.log(updatedStatusNumber);
 
-    const sqlQuery29 = `update public.attribute_kv set long_v = ${updatedStatusNumber} where entity_id = '${deviceId}' and attribute_type = 'SERVER_SCOPE' and attribute_key = 'alarmSettings'`;
+    const sqlQuery29 = `update public.attribute_kv set long_v = ${updatedStatusNumber} where entity_id = '${deviceId}' and ATTRIBUTE_TYPE = 2	AND ATTRIBUTE_KEY = (select key_id from key_dictionary where key = 'alarmSettings')`;
     const res = await pool.query(sqlQuery29);
     //console.log('Row count:', res.rowCount);
 
@@ -1812,12 +1899,12 @@ const updatePanelAttribute = async (deviceId, panelData) => {
 };
 
 const getEmailId = async (code) => {
-  console.log('inside getEmailId');
+  // console.log('inside getEmailId');
   try {
     const sqlQuery33 = `SELECT email FROM public.verify_email where code = $1`;
     const codeInteger = parseInt(code, 10);
     const res = await pool.query(sqlQuery33, [codeInteger]);
-    console.log('sqlQuery33 res.rows: ', res.rows);
+    // console.log('sqlQuery33 res.rows: ', res.rows);
     if (res.rows.length === 0) {
       throw new Error('The link is invalid');
     }
@@ -1864,23 +1951,23 @@ const saveFCMToken = async (token, userId) => {
     const res = await pool.query(sqlQuery35, [userId]);
     //const count = parseInt(res.rows[0].cnt, 10);
 
-    console.log('res.rows[0].cnt: ', res.rows[0].cnt);
+    // console.log('res.rows[0].cnt: ', res.rows[0].cnt);
 
     if (res.rows[0].cnt === '0') {
       const res1 = await pool.query(sqlQuery36, [userId, JSON.stringify(settings)]);
-      console.log('sqlQuery36 res1.rows: ', res1.rows);
-      console.log('Data inserted successfully');
+      // console.log('sqlQuery36 res1.rows: ', res1.rows);
+      // console.log('Data inserted successfully');
     } else {
       const res2 = await pool.query(sqlQuery37, [JSON.stringify(settings.sessions), userId]);
-      console.log('sqlQuery37 res2.rows: ', res2.rows);
-      console.log('Data updated successfully');
+      // console.log('sqlQuery37 res2.rows: ', res2.rows);
+      // console.log('Data updated successfully');
     }
 
     let success = true;
     return success;
 
   } catch (error) {
-    console.log('error funcBE: ', error);
+    // console.log('error funcBE: ', error);
     throw error;
   }
 };
@@ -1921,11 +2008,145 @@ const removeToken = async (token, userId) => {
     success = res2.rowCount === 1;
     return success;
   } catch (error) {
-    console.log('error funcBE: ', error);
+    // console.log('error funcBE: ', error);
     throw error;
   }
 };
 
+listenerClient.connect((err) => {
+  if (err) {
+    console.error('Error acquiring listener client', err.stack);
+  } else {
+    listenerClient.query('LISTEN "alarm_notification"', (err) => {
+      if (err) {
+        console.error('Error with LISTEN query', err.stack);
+      } else {
+        // console.log('Listening to alarm_notification for notifications');
+      }
+    });
 
+    listenerClient.on('notification', async (msg) => {
+      // console.log('Received notification:', msg.payload);
+      let url;
+      let targetBody;
+      let targetId;
+      let headers;
 
-module.exports = { getJwtSysAdmin, getJwtTenant, getUserToken, getUserDeatils, getTenantEntityList, getCustomerEntityList, createCustomer, createCustomerUser, createTenant, getCustomerName, homeDetails, unassignDevice, getCustomer, editCustomer, deleteCustomer, editDeviceLable, getDeviceTelemetry, getDeviceSparklineTelemetry, getDeviceAtrributes, assignDevice, gethistoricData, scanIV, getTheUserjwtToken, saveCode, verifyEmail, checkIfCustomerExists, setVerifyFlagStatus, checkExists, saveCodePwdReset, resetPwd, updateAlarmStatus, getUniquePanelManufacturer, getCustomerList, getmodel, getpaneldata, getAlarmSettings, setAlarmSettings, getsimulationStatus, updatePanelAttribute, getEmailId, saveFCMToken, getfaultlog, removeToken };
+      const jwtResult = await getJwtTenant();
+      if (!jwtResult.boolean) {
+        throw new Error('Failed to get JWT token');
+      }
+
+      try {
+        const payload = JSON.parse(msg.payload);
+        const sqlQuery40 = `SELECT id FROM public.notification_target where name = 'Users of ${payload.customer_name}'`;
+
+        const res = await pool.query(sqlQuery40);
+        // console.log('sqlQuery40 res.rows: ', res.rows);
+
+        if (res.rows.length === 0) {
+
+          const headers = {
+            'Content-Type': 'application/json',
+            'accept': 'application/json',
+            'X-Authorization': `Bearer ${jwtResult.tokenTenant}`,
+          };
+
+          url = `${thingsboardHost}/api/notification/target`;
+          // console.log('jwtResult.tokenTenant: ', jwtResult.tokenTenant);
+
+          targetBody = {
+            "name": `Users of ${payload.customer_name}`,
+            "configuration": {
+              "type": "PLATFORM_USERS",
+              "usersFilter": {
+                "type": "CUSTOMER_USERS",
+                "customerId": payload.customer_id
+              },
+              "description": `Users of ${payload.customer_name}`
+            }
+          };
+
+          // console.log(targetBody);
+
+          const response = await axios.post(url, targetBody, { headers });
+          const customerDataInfo = await response.data;
+          // console.log('Customer modified data:', customerDataInfo);
+          targetId = customerDataInfo.id.id;
+
+          //return customerDataInfo;
+        }
+        else {
+
+          targetId = res.rows[0].id;
+        }
+
+        const headers = {
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+          'X-Authorization': `Bearer ${jwtResult.tokenTenant}`,
+        };
+
+        // console.log('jwtResult.tokenTenant: ', jwtResult.tokenTenant);
+
+        // console.log({ targetId, payload });
+
+        url = `${thingsboardHost}/api/notification/request`;
+
+        notifReqBody = {
+          "template": { "id": null, "createdTime": 0, "tenantId": null, "name": `${payload.v_device_label}`, "notificationType": "GENERAL", "configuration": { "deliveryMethodsTemplates": { "MOBILE_APP": { "method": "MOBILE_APP", "enabled": true, "body": `${payload.v_definition}`, "subject": `PVgo Alarm - ${payload.v_type}`, "additionalConfig": { "icon": { "enabled": true, "icon": "notifications", "color": "#53DC49" }, "onClick": { "enabled": true, "linkType": "LINK", "link": "../HTML/customerAlarm.html" } } } } }, "externalId": null },
+          "targets": [
+            `${targetId}`
+          ],
+          "additionalConfig": {
+            "sendingDelayInSec": 0
+          }
+        };
+
+        // console.log(JSON.stringify(notifReqBody, null, 2));
+
+        const response1 = await axios.post(url, notifReqBody, { headers });
+        const dataFromNotifReq = await response1.data;
+        // console.log('Notification request data:', dataFromNotifReq);
+
+      } catch (error) {
+        // console.log('2)Error modifying customer:', error.message);
+        console.error('2)Error modifying customer:', error.message);
+      }
+    });
+
+    listenerClient.on('error', (err) => {
+      console.error('Listener client error:', err);
+    });
+  }
+});
+
+const populateCustomerDetail = async (id) => {
+  console.log('id: ', id);
+  try {
+    const sqlQuery41 = `SELECT string_agg(u.email, ', ') AS email_list, c.title, case 
+    when a.str_v = 'EndUser' then
+    'Customer'
+    else
+    'Installer'
+    end AS type
+    FROM tb_user u, customer c, attribute_kv a
+    WHERE u.customer_id = c.id
+      and a.entity_id = c.id
+      and a.attribute_key = 340
+      and c.id = $1
+    GROUP BY u.customer_id, c.title, a.str_v`;
+    const res = await pool.query(sqlQuery41, [id]);
+    console.log('sqlQuery40 res.rows: ', res.rows);
+    if (res.rows.length === 0) {
+      throw new Error("This customer doesn't exist");
+    }
+    return res.rows[0];
+
+  } catch (error) {
+    console.log('error: ', error);
+    throw error;
+  }
+};
+
+module.exports = { storeRefreshToken, getStoredRefreshToken, revokeRefreshToken, getJwtSysAdmin, getJwtTenant, getUserToken, getUserDeatils, getTenantEntityList, getCustomerEntityList, createCustomer, createCustomerUser, createTenant, getCustomerName, homeDetails, unassignDevice, getCustomer, editCustomer, deleteCustomer, editDeviceLable, getDeviceTelemetry, getDeviceSparklineTelemetry, getDeviceAtrributes, assignDevice, gethistoricData, scanIV, getTheUserjwtToken, saveCode, verifyEmail, checkIfCustomerExists, setVerifyFlagStatus, checkExists, saveCodePwdReset, resetPwd, updateAlarmStatus, getUniquePanelManufacturer, getCustomerList, getmodel, getpaneldata, getAlarmSettings, setAlarmSettings, getsimulationStatus, updatePanelAttribute, getEmailId, saveFCMToken, getfaultlog, removeToken, populateCustomerDetail };

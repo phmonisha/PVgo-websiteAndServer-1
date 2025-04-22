@@ -1,4 +1,4 @@
-import { getToken, setToken, getCustomerId, createAlert } from "./otherFunc.js";
+import { getToken, fetchWithToken, setToken, getCustomerId, createAlert } from "./otherFunc.js";
 
 const form = document.getElementById("registrationForm");
 
@@ -51,11 +51,10 @@ form.addEventListener("submit", async (event) => {
     }
 
     try {
-        const response = await fetch(url, {
+        const response = await fetchWithToken(url, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify(jsonData),
         });

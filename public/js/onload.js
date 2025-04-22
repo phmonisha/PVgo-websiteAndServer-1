@@ -1,6 +1,7 @@
-import { getToken } from "./otherFunc.js";
+import { getToken, fetchWithToken } from "./otherFunc.js";
 
 document.addEventListener("DOMContentLoaded", async (event) => {
+    debugger;
     const token = getToken();
 
     const data = {};
@@ -9,31 +10,35 @@ document.addEventListener("DOMContentLoaded", async (event) => {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(data),
     };
 
-    const response = await fetch("/onLoad", options);
+    if (token) {
 
 
-    if (response.ok) {
-        const json = await response.json();
-        console.log(json);
-        if (json.success) {
-            if (json.role === "Installer") {
-                window.location.href = "/HTML/tenantHome.html";
+        const response = await fetchWithToken("/onLoad", options);
+
+
+        if (response.ok) {
+            const json = await response.json();
+            console.log(json);
+            if (json.success) {
+                if (json.role === "Installer") {
+                    window.location.href = "/HTML/tenantHome.html";
+                }
+                else {
+                    window.location.href = "/HTML/customerDevice.html";
+                }
             }
             else {
-                window.location.href = "/HTML/customerDevice.html";
-            }
+                null;
+            };
+            // Handle the server response as needed
+        } else {
+            console.error("Server request failed:", response.status);
+            // Handle the error
         }
-        else {
-            null;
-        };
-        // Handle the server response as needed
-    } else {
-        console.error("Server request failed:", response.status);
-        // Handle the error
+
     }
 });

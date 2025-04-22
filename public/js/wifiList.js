@@ -7,7 +7,7 @@
 //    devName.textContent = `Device name: ${qrJson.name}`;
 //});
 
-import { getqrOutput, removeqrOutput, setMAC, getToken, getMAC, createAlert } from "./otherFunc.js";
+import { getqrOutput, removeqrOutput, setMAC, getToken, fetchWithToken, getMAC, createAlert } from "./otherFunc.js";
 
 
 let devicePrefix = 'CURVY_';
@@ -327,13 +327,12 @@ async function successProvision(provisionSuccess) {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify(data),
         };
 
 
-        const response = await fetch("/Assign_Device_To_Customer", options);
+        const response = await fetchWithToken("/Assign_Device_To_Customer", options);
 
         if (response.status === 500) {
             const alertDiv = createAlert('Device successfully added');

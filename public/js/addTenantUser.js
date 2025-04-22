@@ -1,4 +1,4 @@
-import { getToken, setToken, getTenantId, createAlert } from "./otherFunc.js";
+import { getToken, fetchWithToken, setToken, getTenantId, createAlert } from "./otherFunc.js";
 
 const form = document.getElementById("registrationForm");
 
@@ -50,11 +50,10 @@ form.addEventListener("submit", async (event) => {
         url = "/addNewTenantUser"; // Replace with your backend API URL
     }
     try {
-        const response = await fetch(url, {
+        const response = await fetchWithToken(url, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify(jsonData),
         });

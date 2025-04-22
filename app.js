@@ -12,13 +12,13 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
-const { getJwtSysAdmin, getJwtTenant, getUserToken, getUserDeatils, getTenantEntityList, getCustomerEntityList, createCustomer, createCustomerUser, createTenant, getCustomerName, homeDetails, unassignDevice, getCustomer, editCustomer, deleteCustomer, editDeviceLable, getDeviceTelemetry, getDeviceSparklineTelemetry, getDeviceAtrributes, assignDevice, gethistoricData, scanIV, getTheUserjwtToken, saveCode, verifyEmail, checkIfCustomerExists, setVerifyFlagStatus, checkExists, saveCodePwdReset, resetPwd, updateAlarmStatus, getUniquePanelManufacturer, getCustomerList, getmodel, getpaneldata, getAlarmSettings, setAlarmSettings, getsimulationStatus, updatePanelAttribute, getEmailId, saveFCMToken, getfaultlog, removeToken } = require("./funcBE");
+const { storeRefreshToken, getStoredRefreshToken, revokeRefreshToken, getJwtSysAdmin, getJwtTenant, getUserToken, getUserDeatils, getTenantEntityList, getCustomerEntityList, createCustomer, createCustomerUser, createTenant, getCustomerName, homeDetails, unassignDevice, getCustomer, editCustomer, deleteCustomer, editDeviceLable, getDeviceTelemetry, getDeviceSparklineTelemetry, getDeviceAtrributes, assignDevice, gethistoricData, scanIV, getTheUserjwtToken, saveCode, verifyEmail, checkIfCustomerExists, setVerifyFlagStatus, checkExists, saveCodePwdReset, resetPwd, updateAlarmStatus, getUniquePanelManufacturer, getCustomerList, getmodel, getpaneldata, getAlarmSettings, setAlarmSettings, getsimulationStatus, updatePanelAttribute, getEmailId, saveFCMToken, getfaultlog, removeToken, populateCustomerDetail } = require("./funcBE");
 const { saveNewPwd, autenticateUserPWD, saveNewPwdTenant, autenticateTenantUserPWD } = require("./pwdFunc");
 //const { emailUserConcern } = require("./email");
 const sendEmail = require("./sendEmail");
 require('dotenv').config();
 
-const port = 3011;
+const port = 3010;
 
 app.listen(port, () => {
     console.log(`Application started successfully in port ${port}`);
@@ -29,6 +29,8 @@ app.set('view engine', 'ejs'); //to get parameter between web pages
 //EXPRESS SPECIFIC STUFFS
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/images', express.static('images'));
+app.use('/css', express.static('css'));
+app.use('/js', express.static('js'));
 app.use(
     session({
         secret: 'thisismysecretdonttellanyone!',
@@ -41,12 +43,32 @@ app.use(
     })
 );
 
-
 //Used to bring in input form data to backend
 //app.use(express.urlencoded()); //use it if you are getting data directly from html form
 app.use(bodyParser.urlencoded({ extended: false })); // used as an alternative to app.use(express.urlencoded());
 app.use(express.json()); //use it if you are getting html form data using client side java script
-app.use(cors());
+//app.use(cors());
+
+// Configure CORS options
+// const corsOptions = {
+//     origin: 'https://www.pvgo.au',
+//     //origin: '*', // or '*' to allow all origins for development
+//     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+//     allowedHeaders: ['Content-Type', 'Authorization'],
+//     credentials: true, // if you need cookies/auth tokens to be sent
+
+//   };
+
+// CORS Middleware
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    next();
+});
+
+// Enable CORS with these options
+// app.use(cors(corsOptions));
 
 const userData = {};
 
@@ -65,7 +87,6 @@ let tenantCredsJSON = null;
 let newTenant = null;
 let newTenantId = null;
 
-
 function generateRandomCode() {
     // Generate 3 random bytes (24 bits)
     const buffer = crypto.randomBytes(3);
@@ -77,20 +98,41 @@ function generateRandomCode() {
     return code.toString().padStart(6, '0');
 }
 
-
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization']
     const token = authHeader && authHeader.split(' ')[1]
-    //console.log('Token in auth function: ', token);
+    // console.log('Token in auth function: ', token);
     if (token == null) return res.sendStatus(401)
 
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
-        //console.log(err)
+        // console.log(err)
         if (err) return res.sendStatus(403)
         req.user = user
         next()
     })
 };
+
+app.post('/token', async (req, res) => {
+    const refreshToken = req.body.token;
+    //console.log('req.body.loginEmail: ',req.body.loginEmail);
+    if (refreshToken == null) return res.sendStatus(401);
+
+    try {
+        const storedToken = await getStoredRefreshToken(req.body.loginEmail); // Get stored refresh token
+
+        if (refreshToken !== storedToken) return res.sendStatus(403); // Check if the refresh token is valid
+
+        jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+            if (err) return res.sendStatus(403);
+
+            const accessToken = jwt.sign({ name: user.name }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+            res.json({ accessToken });
+        });
+    } catch (error) {
+        console.error('Error fetching refresh token:', error);
+        res.sendStatus(500);
+    }
+});
 
 // Function to get JWT token and store it in the jwToken variable
 async function setJwtSysAdminToken() {
@@ -173,7 +215,7 @@ app.get('/Customer', function (req, res) {
 app.post('/New_Customer_Registration_A', async function (req, res) {
     req.body.additionalInfo = {};
     try {
-        console.log('New_Customer_Registration_A');
+        // console.log('New_Customer_Registration_A');
         await setJwtTenantToken();
         tenantId = null;
         const newCustomer = await createCustomer(req.body, jwtTenantToken, tenantId); // Call createCustomer function with the request body and token
@@ -189,7 +231,7 @@ app.post('/New_Customer_Registration', authenticateToken, async function (req, r
     req.body.additionalInfo = {};
     try {
         await setJwtTenantToken();
-        console.log('New_Customer_Registration');
+        // console.log('New_Customer_Registration');
 
         if (userData[req.user.name].tenantId === undefined) {
             userData[req.user.name].newTenId = userData[req.user.name].newTenantId;
@@ -219,7 +261,7 @@ app.get('/addNewTenantUser', function (req, res) {
 
 app.post('/addNewCustomerUser_A', async function (req, res) {
 
-    console.log(`req.body1: `, req.body);
+    // console.log(`req.body1: `, req.body);
 
     if (req.body.pageIdentifier) {
         req.body.password = 'PVgo@1000#';
@@ -242,7 +284,7 @@ app.post('/addNewCustomerUser_A', async function (req, res) {
     delete req.body.password;
     delete req.body.confirm_password;
 
-    console.log(`req.body2: `, req.body);
+    // console.log(`req.body2: `, req.body);
 
     try {
         await setJwtTenantToken();
@@ -290,7 +332,7 @@ app.post('/addNewCustomerUser', authenticateToken, async function (req, res) {
     }
 
     //console.log(`userData[req.user.name].newCustId: `,userData[req.user.name].newCustId);
-    console.log('req.body: ', req.body);
+    // console.log('req.body: ', req.body);
 
     if (req.body.pageIdentifier) {
         req.body.password = 'PVgo@1000#';
@@ -394,7 +436,7 @@ app.post('/addNewTenantUser', authenticateToken, async function (req, res) {
         userData[req.user.name].newTenId = userData[req.user.name].tenantId;
     }
 
-    console.log('req.body: ', req.body);
+    // console.log('req.body: ', req.body);
 
     if (req.body.pageIdentifier) {
         req.body.password = 'PVgo@1000#';
@@ -441,7 +483,7 @@ app.post('/New_Tenant_Registration', async function (req, res) {
     try {
         await setJwtTenantToken();
         const newTenant = await createTenant(req.body, jwtTenantToken); // Call createCustomer function with the request body and token
-        console.log('newTenant: ', newTenant);
+        // console.log('newTenant: ', newTenant);
         if (newTenant !== undefined) {
             newTenantId = newTenant.id.id;
             res.json(newTenant);
@@ -583,12 +625,19 @@ app.post('/Login', async function (req, res) {
 
             const username = req.body.username;
             const user = { name: username };
-            const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: 86400 });
-            //console.log({ username, accessToken });
-            //
+            accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' }); // Access token valid for 1 hour
+            refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' }); // Refresh token valid for 7 days
+            //refreshTokens.push(refreshToken);
+
+            // Store the refresh token in the database
+            await storeRefreshToken(username, refreshToken);
+
+            // console.log('accessToken: ', accessToken);
+            // console.log('refreshToken: ', refreshToken);
+            // console.log('userData before: ', userData);
 
             const userDetails = await getUserDeatils(tokenUser);
-            //console.log({userDetails});
+            // console.log({userDetails});
             //     if(userDetails === 0){
             //         res.json({ "success": false });
             //     };
@@ -634,16 +683,16 @@ app.post('/Login', async function (req, res) {
                         userData[username].customerId = userDetails.customerId.id;
                     }
                     //console.log('userData : ', userData);
-                    res.json({ "role": role, "success": boolean, "accessToken": accessToken });
+                    res.json({ "role": role, "success": boolean, "accessToken": accessToken, "refreshToken": refreshToken });
                 }
             };
         }
         else {
-            res.json({ "role": null, "success": boolean, "accessToken": null });
+            res.json({ "role": null, "success": boolean, "accessToken": null, refreshToken: null });
         };
     } catch (error) {
         console.error('1) Error getting Tenant JWT token:', error.message);
-        console.log('1) Error getting Tenant JWT token:', error.message);
+        // console.log('1) Error getting Tenant JWT token:', error.message);
     }
 });
 
@@ -668,6 +717,10 @@ app.get('/tenantAsset', function (req, res) {
 });
 
 app.get('/tenantCustomer', function (req, res) {
+    res.sendFile(path.join(__dirname, 'public', '/HTML/tenantCustomer.html'));
+});
+
+app.get('/tenantUser', function (req, res) {
     res.sendFile(path.join(__dirname, 'public', '/HTML/tenantCustomer.html'));
 });
 
@@ -752,6 +805,10 @@ app.get('/customerNotification', function (req, res) {
     res.sendFile(path.join(__dirname, 'public', '/HTML/customerNotification.html'));
 });
 
+app.get('/customerPanel', function (req, res) {
+    res.sendFile(path.join(__dirname, 'public', '/HTML/customerNotification.html'));
+});
+
 // const refreshInterval = 2 * 60 * 1000; // 2 minutes in milliseconds
 
 // async function refreshCache(pageIdentifier, jwtTenantToken) {
@@ -809,7 +866,7 @@ app.post('/tenantEntityList', authenticateToken, async function (req, res) {
         await setJwtTenantToken();
         //console.log('jwtTenantToken inside /tenantEntityList',jwtTenantToken);
         const authResult = await getTenantEntityList(pageIdentifier, jwtTenantToken, userData[req.user.name].tId);
-        console.log(authResult);
+        // console.log(authResult);
         res.json(authResult);
 
     } catch (error) {
@@ -1052,7 +1109,7 @@ app.post('/getDeviceId', authenticateToken, function (req, res) {
 
 app.post('/editDeviceLable', authenticateToken, async function (req, res) {
     try {
-        console.log('req.body inside /editDeviceLable: ', req.body);
+        // console.log('req.body inside /editDeviceLable: ', req.body);
         await setJwtTenantToken();
         const result = await editDeviceLable(userData[req.user.name].devId, req.body.lable);
         res.json(result.success);
@@ -1064,12 +1121,25 @@ app.post('/editDeviceLable', authenticateToken, async function (req, res) {
 
 app.post('/deleteCustomer', authenticateToken, async function (req, res) {
     try {
-        const customerId = req.body.customerId;
+        console.log('req.body.pageIdentifier: ', req.body.pageIdentifier);
+        let id;
+        if (req.body.pageIdentifier !== undefined && req.body.pageIdentifier !== null && req.body.pageIdentifier === 'customerDelete') {
+            if (userData[req.user.name].role === 'Installer') {
+                id = userData[req.user.name].tenantId;
+            }
+            else {
+                id = userData[req.user.name].customerId;
+            }
+        }
+        else {
+            id = req.body.customerId;
+        }
 
-        //console.log({ customerId });
+        console.log('id: ', id);
+
         await setJwtTenantToken();
-        const result = await deleteCustomer(customerId, jwtTenantToken);
-        //console.log({ result });
+        const result = await deleteCustomer(id, jwtTenantToken);
+        console.log({ result });
         res.json(result);
     } catch (error) {
         res.status(500).json({ error });
@@ -1080,7 +1150,7 @@ app.post('/deleteCustomer_A', async function (req, res) {
     try {
         const customerId = req.body.customerId;
 
-        console.log({ customerId });
+        // console.log({ customerId });
         await setJwtTenantToken();
         const result = await deleteCustomer(customerId, jwtTenantToken);
         //console.log({ result });
@@ -1094,7 +1164,7 @@ app.post('/deleteTenant_A', async function (req, res) {
     try {
         const tenantId = req.body.tenantId;
 
-        console.log({ tenantId });
+        // console.log({ tenantId });
         await setJwtTenantToken();
         const result = await deleteCustomer(tenantId, jwtTenantToken);
         //console.log({ result });
@@ -1160,9 +1230,18 @@ app.post('/scanIVCurvy', authenticateToken, async function (req, res) {
 });
 
 // Logout route
-app.post('/logout', authenticateToken, (req, res) => {
+// app.post('/logout', authenticateToken, (req, res) => {
 
-    res.status(200).json({ redirectUrl: 'index.html' });
+//     res.status(200).json({ redirectUrl: 'index.html' });
+// });
+
+app.post('/logout', authenticateToken, async (req, res) => {
+    try {
+        await revokeRefreshToken(req.body.email);
+        res.sendStatus(204);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 
 app.post('/Assign_Device_To_Customer', authenticateToken, async function (req, res) {
@@ -1212,25 +1291,25 @@ app.post('/checkIfExistingCustomer', async function (req, res) {
 app.post('/sendSignUpEmail', async function (req, res) {
     try {
         const randomCode = generateRandomCode();
-        console.log('Random code:', randomCode);
+        // console.log('Random code:', randomCode);
 
         const verifyForm = req.body;
-        console.log('verifyForm: ', verifyForm);
+        // console.log('verifyForm: ', verifyForm);
         //const result = await unassignDevice(deviceId, jwtTenantToken);
         const toEmail = [verifyForm.email];
         const emailSubject = "Verification Code for signup";
         const emailText = `Hi ${verifyForm.title},`;
         const emailHtml = `Here is your Verification Code: <strong>${randomCode}</strong>. Please enter it on the registration page to complete the process.<br><br><br><strong>Thank you!</strong><br>PVgo<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><hr>Copyright © 2024 PVgo. All rights reserved`;
         const mailResponse = await sendEmail(toEmail, emailSubject, emailText, emailHtml);
-        console.log('mailResponse: ', mailResponse);
+        // console.log('mailResponse: ', mailResponse);
         if (mailResponse !== undefined) {
-            console.log('inside saveCode');
+            // console.log('inside saveCode');
             const saveCodeResponse = await saveCode(toEmail, randomCode);
-            console.log('saveCodeResponse : ', saveCodeResponse);
+            // console.log('saveCodeResponse : ', saveCodeResponse);
             res.json({ saveCodeResponse });
         }
     } catch (error) {
-        console.log(error);
+        // console.log(error);
         res.status(500).json({ error });
     }
 });
@@ -1238,14 +1317,14 @@ app.post('/sendSignUpEmail', async function (req, res) {
 app.post('/verifySignupCode', async function (req, res) {
     try {
 
-        console.log('req.body: ', req.body);
+        // console.log('req.body: ', req.body);
         const verifyStatus = await verifyEmail(req.body.email1, req.body.code);
-        console.log('verifyStatus: ', verifyStatus);
+        // console.log('verifyStatus: ', verifyStatus);
         res.json({ verifyStatus });
 
 
     } catch (error) {
-        console.log(error);
+        // console.log(error);
         res.status(500).json({ error });
     }
 });
@@ -1253,28 +1332,28 @@ app.post('/verifySignupCode', async function (req, res) {
 app.post('/setVerifyFlag', async function (req, res) {
     try {
 
-        console.log('req.body: ', req.body);
+        // console.log('req.body: ', req.body);
         const verifyFlagStatus = await setVerifyFlagStatus(req.body.email);
-        console.log('verifyFlagStatus: ', verifyFlagStatus);
+        // console.log('verifyFlagStatus: ', verifyFlagStatus);
         res.json({ verifyFlagStatus });
 
 
     } catch (error) {
-        console.log(error);
+        // console.log(error);
         res.status(500).json({ error });
     }
 });
 
 app.post('/checkIfExists', async function (req, res) {
     try {
-        console.log('req.body.email: ', req.body.email);
+        // console.log('req.body.email: ', req.body.email);
         const existStatus = await checkExists(req.body.email);
-        console.log('existStatus: ', existStatus);
+        // console.log('existStatus: ', existStatus);
         res.json({ existStatus });
 
 
     } catch (error) {
-        console.log(error);
+        // console.log(error);
         res.status(500).json({ error });
     }
 });
@@ -1282,24 +1361,24 @@ app.post('/checkIfExists', async function (req, res) {
 app.post('/emailForgotPwdCode', async function (req, res) {
     try {
         const randomCode = generateRandomCode();
-        console.log('Random code:', randomCode);
-        console.log('userData: ', userData);
+        // console.log('Random code:', randomCode);
+        // console.log('userData: ', userData);
         resetPwdEmail = req.body.email;
-        console.log('resetPwdEmail: ', resetPwdEmail);
+        // console.log('resetPwdEmail: ', resetPwdEmail);
         const toEmail = [resetPwdEmail];
         const emailSubject = "Verification Code for signup";
         const emailText = `Hi,`;
         const emailHtml = `Hi,<br><br>We received a request to reset the password for your account. To verify your identity and complete the password reset process, please use the following verification code: <br><br><strong style="font-size:20px;">${randomCode}</strong><br><br><br><strong>Thank you!</strong><br>E_Billing<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><hr>Copyright © 2024 Megawattpower pvt. ltd. All rights reserved`;
         const mailResponse = await sendEmail(toEmail, emailSubject, emailText, emailHtml);
-        console.log('mailResponse: ', mailResponse);
+        // console.log('mailResponse: ', mailResponse);
         if (mailResponse !== undefined) {
-            console.log('inside saveCode');
+            // console.log('inside saveCode');
             const saveCodeResponse = await saveCodePwdReset(resetPwdEmail, randomCode);
-            console.log('saveCodeResponse : ', saveCodeResponse);
+            // console.log('saveCodeResponse : ', saveCodeResponse);
             res.json({ saveCodeResponse });
         }
     } catch (error) {
-        console.log(error);
+        // console.log(error);
         res.status(500).json({ error });
     }
 });
@@ -1307,14 +1386,14 @@ app.post('/emailForgotPwdCode', async function (req, res) {
 
 app.post('/verifyResetPwdCode', async function (req, res) {
     try {
-        console.log('req.body.code: ', req.body.code);
+        // console.log('req.body.code: ', req.body.code);
         const verifyStatus = await verifyEmail(req.body.email, req.body.code);
-        console.log('verifyStatus: ', verifyStatus);
+        // console.log('verifyStatus: ', verifyStatus);
         res.json({ verifyStatus });
 
 
     } catch (error) {
-        console.log(error);
+        // console.log(error);
         res.status(500).json({ error });
     }
 });
@@ -1347,7 +1426,7 @@ app.post('/updateAlarm', authenticateToken, async function (req, res) {
         res.json({ alarmStatus });
 
     } catch (error) {
-        console.log(error);
+        // console.log(error);
         res.status(500).json({ error });
     }
 });
@@ -1443,7 +1522,6 @@ app.post('/populateAlarmSettings', authenticateToken, async function (req, res) 
     try {
         const alarmSettings = await getAlarmSettings(req.body.selectedDeviceId);
         res.json(alarmSettings);
-
     } catch (error) {
         console.error('1) Error getting panel models', error.message);
         res.status(500).json({ error: error.message });
@@ -1452,7 +1530,7 @@ app.post('/populateAlarmSettings', authenticateToken, async function (req, res) 
 
 app.post('/setAlarmSetting', authenticateToken, async function (req, res) {
     try {
-        console.log('req.body inside set Alarm: ', req.body);
+        // console.log('req.body inside set Alarm: ', req.body);
         const alarmSettings = await setAlarmSettings(req.body.selectedDeviceId, req.body.alarmSettings);
         res.json({ alarmSettings });
     } catch (error) {
@@ -1513,25 +1591,25 @@ app.post('/updatePanelAttribute', authenticateToken, async function (req, res) {
 app.post('/sendUserVerificationEmail', async function (req, res) {
     try {
         const randomCode = generateRandomCode();
-        console.log('Random code:', randomCode);
+        // console.log('Random code:', randomCode);
 
         const verifyForm = req.body;
-        console.log('verifyForm: ', verifyForm);
+        // console.log('verifyForm: ', verifyForm);
         //const result = await unassignDevice(deviceId, jwtTenantToken);
         const toEmail = [verifyForm.email];
         const emailSubject = "Create Password - PVgo";
         const emailText = `Hi,`;
         const emailHtml = `Please click below link to verify email and create new password.<br><br><br><p style="font-size:20px;">${process.env.linkTest}/HTML/userVerification.html?code=${randomCode}</p><br><br><br><strong>Thank you!</strong><br>PVgo<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><hr>Copyright © 2024 PVgo. All rights reserved`;
         const mailResponse = await sendEmail(toEmail, emailSubject, emailText, emailHtml);
-        console.log('mailResponse: ', mailResponse);
+        // console.log('mailResponse: ', mailResponse);
         if (mailResponse !== undefined) {
-            console.log('inside saveCode');
+            // console.log('inside saveCode');
             const saveCodeResponse = await saveCode(toEmail, randomCode);
-            console.log('saveCodeResponse : ', saveCodeResponse);
+            // console.log('saveCodeResponse : ', saveCodeResponse);
             res.json({ saveCodeResponse });
         }
     } catch (error) {
-        console.log(error);
+        // console.log(error);
         res.status(500).json({ error });
     }
 });
@@ -1549,13 +1627,13 @@ app.post('/getEmail', async function (req, res) {
 
 app.post('/saveToken', authenticateToken, async function (req, res) {
     try {
-        console.log('req.body: ', req.body);
-        console.log('customerUserId', userData[req.user.name].customerUserId);
+        // console.log('req.body: ', req.body);
+        // console.log('customerUserId', userData[req.user.name].customerUserId);
         const saveTokenStatus = await saveFCMToken(req.body.fcmToken, userData[req.user.name].customerUserId);
-        console.log('saveTokenStatus: ', saveTokenStatus);
+        // console.log('saveTokenStatus: ', saveTokenStatus);
         res.json({ saveTokenStatus });
     } catch (error) {
-        console.log('error app.js: ', error);
+        // console.log('error app.js: ', error);
         res.status(500).json({ error });
     }
 });
@@ -1582,7 +1660,7 @@ app.post('/removeFCMToken', authenticateToken, async function (req, res) {
         //console.log('req.body removeFCMToken: ', req.body);
         //console.log('customerUserId removeFCMToken: ', userData[req.user.name].customerUserId);
         const saveTokenStatus = await removeToken(req.body.fcmToken, userData[req.user.name].customerUserId);
-        console.log('saveTokenStatus: ', saveTokenStatus);
+        // console.log('saveTokenStatus: ', saveTokenStatus);
         res.json({ saveTokenStatus });
     } catch (error) {
         // console.log('error app.js: ', error);
@@ -1604,5 +1682,24 @@ app.post('/send-to-slack', async (req, res) => {
         res.status(response.status).send({ message: 'Message sent to Slack successfully.' });
     } catch (error) {
         res.status(error.response ? error.response.status : 500).send({ error: 'Error sending message to Slack.' });
+    }
+});
+
+app.post('/populateCustomerDetails', authenticateToken, async function (req, res) {
+    try {
+        let id;
+
+        if (userData[req.user.name].role === 'Installer') {
+            id = userData[req.user.name].tenantId;
+        }
+        else {
+            id = userData[req.user.name].customerId;
+        }
+        const accountDetails = await populateCustomerDetail(id);
+        console.log('accountDetails: ', accountDetails);
+        res.json({ accountDetails });
+    } catch (error) {
+        // console.log('error app.js: ', error);
+        res.status(500).json({ error });
     }
 });

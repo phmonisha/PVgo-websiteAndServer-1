@@ -1161,6 +1161,10 @@ for custom scrollbar for webkit browser::-webkit-scrollbar {
   text-align: right;
 }
 
+.center-allign {
+  text-align: center;
+}
+
 .text-bigger {
   font-weight: bold;
   color: #252525;
@@ -1779,53 +1783,75 @@ label {
 
 #sparkline-image-vmp {
   grid-column: span 2;
-
+  max-width: 100%;
+  max-height: 100px;
 }
 
 #sparkline-image-imp {
   grid-column: span 2;
+  max-width: 100%;
+  max-height: 100px;
 }
 
 #sparkline-image-pmp {
   grid-column: span 2;
+  max-width: 100%;
+  max-height: 100px;
 }
 
 #sparkline-image-vop {
   grid-column: span 2;
+  max-width: 100%;
+  max-height: 100px;
 }
 
 #sparkline-image-iop {
   grid-column: span 2;
+  max-width: 100%;
+  max-height: 100px;
 }
 
 #sparkline-image-pop {
   grid-column: span 2;
+  max-width: 100%;
+  max-height: 100px;
 }
 
 #sparkline-image-voc {
   grid-column: span 2;
+  max-width: 100%;
+  max-height: 100px;
 }
 
 #sparkline-image-isc {
   grid-column: span 2;
+  max-width: 100%;
+  max-height: 100px;
 }
 
 #sparkline-image-ff {
   grid-column: span 2;
+  max-width: 100%;
+  max-height: 100px;
 }
 
 #sparkline-image-irradiance {
   grid-column: span 2;
+  max-width: 100%;
+  max-height: 100px;
 }
 
 #sparkline-image-temperature {
   grid-column: span 2;
+  max-width: 100%;
+  max-height: 100px;
 }
 
 #sparkline-image-perfromance-factor {
   grid-column: span 2;
+  max-width: 100%;
+  max-height: 100px;
 }
-
 
 /* /////////////////////////////HISTORIC PAGE/////////////////////////////////////////////////////////////////// */
 @media(width>=1140px) {
@@ -2536,7 +2562,6 @@ label {
   }
 }
 
-
 .btn-alarm {
   margin: 0px 3px 3px 3px !important;
   border-radius: 3px !important;
@@ -2544,6 +2569,17 @@ label {
   height: 28px !important;
   border: none;
   background-color: #8bc63f !important;
+  color: white;
+  /* color: rgba(37, 11, 11, 0.849); */
+}
+
+.btn-alarm2 {
+  margin: 0px 3px 3px 3px !important;
+  border-radius: 3px !important;
+  width: 190px !important;
+  height: 28px !important;
+  border: none;
+  background-color: #d2c122 !important;
   color: white;
   /* color: rgba(37, 11, 11, 0.849); */
 }

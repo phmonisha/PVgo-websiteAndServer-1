@@ -6,12 +6,11 @@ export async function unassignCustomerDevice(deviceId) {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify(dataId),
         };
 
-        const resp = await fetch("/unassignDevice", option);
+        const resp = await fetchWithToken("/unassignDevice", option);
 
         if (resp.ok) {
             const deviceData = await resp.json();
@@ -53,12 +52,11 @@ export async function populateCustomer(customerId) {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify(dataId),
         };
 
-        const resp = await fetch("/populateCustomer", option);
+        const resp = await fetchWithToken("/populateCustomer", option);
 
         if (resp.ok) {
             const customerData = await resp.json();
@@ -94,12 +92,11 @@ export async function updateAlarm(id, btn){
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify(dataId),
         };
 
-        const resp = await fetch("/updateAlarm", option);
+        const resp = await fetchWithToken("/updateAlarm", option);
 
         if (resp.ok) {
             const status = await resp.json();
@@ -126,12 +123,11 @@ export async function populateDeviceLable(deviceId, lable) {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify(dataId),
         };
 
-        await fetch("/setDeviceID", option);
+        await fetchWithToken("/setDeviceID", option);
 
 
     } catch (error) {
@@ -153,12 +149,11 @@ export async function deleteCustomer(customerId) {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify(dataId),
         };
 
-        const resp = await fetch("/deleteCustomer", option);
+        const resp = await fetchWithToken("/deleteCustomer", option);
 
         if (resp.ok) {
             const customerData = await resp.json();
@@ -193,7 +188,35 @@ export function removeToken() {
     localStorage.removeItem('token');
 };
 
+export function setRefreshToken(refreshToken) {
+    console.log('token inside setToken: ',refreshToken);
+    localStorage.setItem('refreshToken', refreshToken);
+};
+
+export function getRefreshToken() {
+    console.log(localStorage.getItem('refreshToken'));
+    return localStorage.getItem('refreshToken');
+};
+
+export function removeRefreshToken() {
+    localStorage.removeItem('refreshToken');
+};
+
+export function setLoginEmail(email) {
+    localStorage.setItem('email', email);
+};
+
+export function getLoginEmail() {
+    console.log(localStorage.getItem('email'));
+    return localStorage.getItem('email');
+};
+
+export function removeLoginEmail() {
+    localStorage.removeItem('email');
+};
+
 export function convertEpochToAEST(epochTimeInput) {
+    console.log('epochTimeInput:',epochTimeInput);
     const timestamp = parseInt(epochTimeInput, 10);
 
     const timestampSeconds = timestamp / 1000;
@@ -426,8 +449,63 @@ export function createConfirm(message, callback) {
 };
 
 
+export async function fetchWithToken(url, options) {
+    debugger;
+    let token = localStorage.getItem('token');
+    console.log('token: ',token);
 
+    if (!token) {
+        window.location.href = '../index.html';
+        throw new Error('No access token available');
+    }
 
+    options.headers['Authorization'] = `Bearer ${token}`;
 
+    let response = await fetch(url, options);
+    console.log('response:', response);
 
+    if (response.status === 403) {
+        // Token might be expired, try to refresh it
+        try {
+            token = await refreshAccessToken();
+            options.headers['Authorization'] = `Bearer ${token}`;
+            response = await fetch(url, options);
+        } catch (error) {
+            console.error('Failed to refresh token:', error);
+            window.location.href = '../index.html';
+            //console.log('Failed to refresh token:', error);
+            // Handle the error (e.g., redirect to login)
+        }
+    }
+    else if (response.status === 500 || response.status === 403) {
+        // Need re-login due to server restart
+        alert('Your account needs re-login. You are being redirected to the login page.');
+        window.location.href = '../index.html';
+    }
 
+    return response;
+};
+
+async function refreshAccessToken() {
+    debugger;
+    const refreshToken = localStorage.getItem('refreshToken'); // Assuming you're storing the refresh token in local storage
+    console.log('refreshToken: ',refreshToken);
+    const response = await fetch("/token", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token: refreshToken, loginEmail: getLoginEmail() }),
+    });
+
+    if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem('token', data.accessToken); // Store the new access token
+        return data.accessToken;
+    } else {
+        removeRefreshToken();
+        removeToken();
+        removeLoginEmail();
+        throw new Error('Failed to refresh access token');
+    }
+}

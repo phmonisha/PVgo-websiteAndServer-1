@@ -1,4 +1,4 @@
-import { getToken, createAlert } from "./otherFunc.js";
+import { getToken, fetchWithToken, createAlert } from "./otherFunc.js";
 
 document.getElementById('add').addEventListener('click', async (event) => {
 
@@ -13,13 +13,12 @@ document.getElementById('add').addEventListener('click', async (event) => {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(data),
     };
 
 
-    const response = await fetch("/Assign_Device_To_Customer", options);
+    const response = await fetchWithToken("/Assign_Device_To_Customer", options);
 
     if (response.status === 500) {
         alert('Device successfully added');
@@ -51,13 +50,12 @@ formE.addEventListener("submit", async (event) => {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify(jsonData),
     };
 
     try {
-        const response = await fetch(url, options);
+        const response = await fetchWithToken(url, options);
 
         if (response.ok) {
             const json = await response.json();
@@ -87,13 +85,12 @@ formP.addEventListener("submit", async (event) => {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify(data),
     };
 
     try {
-        const response = await fetch("/getDeviceId", options);
+        const response = await fetchWithToken("/getDeviceId", options);
 
         if (response.ok) {
             const json = await response.json();

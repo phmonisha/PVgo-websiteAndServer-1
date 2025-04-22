@@ -1,4 +1,4 @@
-import { getToken, createAlert } from "./otherFunc.js";
+import { createAlert } from "./otherFunc.js";
 
 const verifyElement = document.getElementById('verifyStatus');
 let verifyFlag;
@@ -8,8 +8,6 @@ document.addEventListener("DOMContentLoaded", async (event) => {
     event.preventDefault();
     document.getElementById("setPwd").addEventListener("click", verifyCodeAndSetPwd);
     try {
-        debugger;
-        const token = getToken();
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
         console.log('Extracted code:', code);

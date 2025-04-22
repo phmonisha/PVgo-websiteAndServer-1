@@ -1,4 +1,4 @@
-import { unassignCustomerDevice, populateCustomer, deleteCustomer, getToken, convertEpochToAEST, populateDeviceLable, createConfirm, updateAlarm } from "./otherFunc.js";
+import { unassignCustomerDevice, populateCustomer, deleteCustomer, getToken, fetchWithToken, convertEpochToAEST, populateDeviceLable, createConfirm, updateAlarm } from "./otherFunc.js";
 
 // '.tbl-content' consumed little space for vertical scrollbar, scrollbar width depend on browser/os/platfrom. Here calculate the scollbar width .
 $(window).on("load resize ", function () {
@@ -83,16 +83,15 @@ document.addEventListener("DOMContentLoaded", async (event) => {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(dataPage),
     };
 
     if (pageIdentifier.startsWith('tenant')) {
-        response = await fetch("/tenantEntityList", options);
+        response = await fetchWithToken("/tenantEntityList", options);
     }
     else if (pageIdentifier.startsWith('customer')) {
-        response = await fetch("/customerEntityList", options);
+        response = await fetchWithToken("/customerEntityList", options);
     };
 
     const cuList = await response.json();
@@ -193,6 +192,23 @@ document.addEventListener("DOMContentLoaded", async (event) => {
             });
         }
     }
+    else if (pageIdentifier === 'customerNotification') {
+        for (const i of arr) {
+
+            data.push({
+                'createdTime': convertEpochToAEST(i.createdTime),
+                'label': i.label,
+                'type': i.type,
+                'severity': i.severity,
+                'definition': i.definition,
+                'status': i.status,
+                'acknowledged': i.acknowledged,
+                'cleared': i.cleared,
+                'id': i.id,
+                'deviceId': i.deviceId
+            });
+        }
+    }
 
 
     data.sort((a, b) => {
@@ -283,6 +299,12 @@ document.addEventListener("DOMContentLoaded", async (event) => {
                 ? data
                 : data.filter(item => item.name.toLowerCase().includes(searchText));
         }
+        else if (pageIdentifier === 'customerNotification') {
+            const searchText = searchInput.value.toLowerCase();
+            filteredData = searchText === ''
+                ? data
+                : data.filter(item => item.name.toLowerCase().includes(searchText));
+        }
 
         totalPages = Math.ceil(filteredData.length / itemsPerPage);
         currentPage = Math.min(currentPage, totalPages);
@@ -351,10 +373,9 @@ document.addEventListener("DOMContentLoaded", async (event) => {
                         const fetchData = async () => {
                             try {
                                 console.log('item.customerID 2: ', item.customerID);
-                                const response = await fetch('/setCustomer', {
+                                const response = await fetchWithToken('/setCustomer', {
                                     method: 'POST', // You can use the appropriate HTTP method
                                     headers: {
-                                        'Authorization': `Bearer ${token}`,
                                         'Content-Type': 'application/json',
                                     },
                                     body: JSON.stringify({
@@ -508,10 +529,9 @@ document.addEventListener("DOMContentLoaded", async (event) => {
                         event.stopPropagation();
                         const fetchData = async () => {
                             try {
-                                const response = await fetch('/setDevice', {
+                                const response = await fetchWithToken('/setDevice', {
                                     method: 'POST', // You can use the appropriate HTTP method
                                     headers: {
-                                        'Authorization': `Bearer ${token}`,
                                         'Content-Type': 'application/json',
                                     },
                                     body: JSON.stringify({
@@ -535,11 +555,55 @@ document.addEventListener("DOMContentLoaded", async (event) => {
                     tableBody.appendChild(row);
                 });
             }
-            else if (pageIdentifier === 'customerAsset') {
+            // else if (pageIdentifier === 'customerAsset') {
+            //     currentPageData.forEach((item) => {
+            //         const row = document.createElement('li');
+            //         row.innerHTML = `<div class="grid-container"> <div class="grid-item left-allign text-bigger">${item.name}</div> <div class="grid-item left-allign name-length">${item.assetProfile}</div> <div class="grid-item right-allign mergGrid2"></div> <div class="grid-item left-allign">${item.label !== null ? item.label : ''}</div> <div class="grid-item right-allign">${item.createdTime}</div> </div>`;
+            //         tableBody.appendChild(row);
+            //     });
+            // }
+            else if (pageIdentifier === 'customerNotification') {
                 currentPageData.forEach((item) => {
                     const row = document.createElement('li');
-                    row.innerHTML = `<div class="grid-container"> <div class="grid-item left-allign text-bigger">${item.name}</div> <div class="grid-item left-allign name-length">${item.assetProfile}</div> <div class="grid-item right-allign mergGrid2"></div> <div class="grid-item left-allign">${item.label !== null ? item.label : ''}</div> <div class="grid-item right-allign">${item.createdTime}</div> </div>`;
+                    console.log('item.deviceId: ', item.deviceId);
+                    if (item.deviceId === '00000000-0000-0000-0000-000000000000') {
+                        row.innerHTML = `<div class="grid-container"> <div class="grid-item left-allign text-bigger">${item.type}</div> <div class="grid-item right-allign">${item.createdTime}</div> <div class="grid-item left-allign name-length">${item.definition}</div> <div class="grid-item right-allign sub-grid-container"> <div class="sub-grid-item"></div> <div class="sub-grid-item"></div> <div class="sub-grid-item"></div> <div class="sub-grid-item"></div> <div class="sub-grid-item"></div> <div class="sub-grid-item"></div> <div class="sub-grid-item"></div> <div class="sub-grid-item"></div> <div class="sub-grid-item"></div> <div class="sub-grid-item addDevice">  </div> </div> </div>`;
+                    } else {
+                        row.innerHTML = `<div class="grid-container"> <div class="grid-item left-allign text-bigger">${item.label}</div> <div class="grid-item right-allign">${item.createdTime}</div> <div class="grid-item left-allign name-length">PVgo Alarm - ${item.type} generated</div> <div class="grid-item right-allign sub-grid-container"> <div class="sub-grid-item"></div> <div class="sub-grid-item"></div> <div class="sub-grid-item"></div> <div class="sub-grid-item"></div> <div class="sub-grid-item"></div> <div class="sub-grid-item"></div> <div class="sub-grid-item"></div> <div class="sub-grid-item"></div> <div class="sub-grid-item"></div> <div class="sub-grid-item addDevice"> <button class="btn-alarm" id="btn-notif">Go to device</button> </div> </div> </div>`;
+                    }
+                    
                     tableBody.appendChild(row);
+            
+                    const goToDeviceButton = row.querySelector('.btn-alarm');
+                    if (goToDeviceButton) {
+                        goToDeviceButton.addEventListener('click', (event) => {
+                            event.stopPropagation();
+                            const fetchData = async () => {
+                                try {
+                                    const response = await fetchWithToken('/setDevice', {
+                                        method: 'POST', // You can use the appropriate HTTP method
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                        },
+                                        body: JSON.stringify({
+                                            deviceId: item.deviceId,
+                                        }),
+                                    });
+            
+                                    if (!response.ok) {
+                                        throw new Error(`Request to set device ID failed with status: ${response.status}`);
+                                    }
+            
+                                    // After the server call is successful, open the customerDashboard page
+                                    window.location.href = '/HTML/customerDashboard.html';
+                                } catch (error) {
+                                    console.error('Server call error: ', error);
+                                }
+                            };
+            
+                            fetchData();
+                        });
+                    }
                 });
             }
         }

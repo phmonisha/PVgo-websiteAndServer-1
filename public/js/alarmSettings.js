@@ -1,8 +1,9 @@
-import { getToken } from "./otherFunc.js";
+import { getToken, fetchWithToken } from "./otherFunc.js";
 
 let selectedDevice = null;
 
 document.addEventListener('DOMContentLoaded', function () {
+    debugger;
     document.getElementById("close-popup").addEventListener("click", function () {
         document.getElementById("popup").style.display = "none";
     });
@@ -22,13 +23,12 @@ document.getElementById("open-popup").addEventListener("click", async function (
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(data),
     };
 
     try {
-        const response = await fetch("/populateDeviceList", options);
+        const response = await fetchWithToken("/populateDeviceList", options);
 
         if (response.ok) {
             const json = await response.json();
@@ -102,17 +102,15 @@ async function handleDeviceSelection(event) {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(dataId),
     };
 
-    const resp = await fetch("/populateAlarmSettings", option);
+    const resp = await fetchWithToken("/populateAlarmSettings", option);
 
     if (resp.ok) {
         const settingsData = await resp.json();
         console.log('settingsData: ', settingsData);
-
 
         const dataFromServer = settingsData;
 
@@ -213,14 +211,13 @@ document.getElementById('popup-form').addEventListener('submit', async function 
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token1}`,
         },
         body: JSON.stringify(data1),
     };
 
     //console.log(options);
 
-    const response1 = await fetch("/setAlarmSetting", options);
+    const response1 = await fetchWithToken("/setAlarmSetting", options);
     if (response1.ok) {
         const status = await response1.json();
         console.log({ status });

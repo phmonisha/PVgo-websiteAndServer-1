@@ -16,10 +16,10 @@ const transporter = nodemailer.createTransport({
 
 async function sendEmail(to, subject, text, html) {
 
-  console.log('transporter: ', transporter);
+  // console.log('transporter: ', transporter);
 
   try {
-    console.log({ to, subject, text, html });
+    // console.log({ to, subject, text, html });
     const info = await transporter.sendMail({
       from: {
           name: 'PVgo',
@@ -40,7 +40,7 @@ async function sendEmail(to, subject, text, html) {
       // bcc: ["monishaputhanveet@gmail.com"],
     });
 
-    console.log("Message sent: %s", info.response);
+    // console.log("Message sent: %s", info.response);
     return info.response;
   } catch (error) {
     console.error("Error sending email:", error);

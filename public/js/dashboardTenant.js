@@ -1,4 +1,4 @@
-import { getToken, createAlert } from "./otherFunc.js";
+import { getToken, fetchWithToken, createAlert } from "./otherFunc.js";
 
 const bodyElement = document.querySelector('body');
 
@@ -50,12 +50,11 @@ document.addEventListener('DOMContentLoaded', function () {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify(dataForCustomerList),
         };
         try {
-            const responseData = await fetch("/getCustomerList", dataForCustomerListOptions);
+            const responseData = await fetchWithToken("/getCustomerList", dataForCustomerListOptions);
             customerData = await responseData.json();
             // Set input field value to the title of the first customer
             if (customerData.length > 0) {
@@ -246,11 +245,10 @@ document.addEventListener('DOMContentLoaded', function () {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify(datapageDeviceList),
         };
-        const responseDeviceList = await fetch("/customerDeviceList", optionsDDeviceList);
+        const responseDeviceList = await fetchWithToken("/customerDeviceList", optionsDDeviceList);
         const deviceListJson = await responseDeviceList.json();
         deviceListArray = deviceListJson.data;
         labelSelectortenant.innerHTML = '';
@@ -574,12 +572,11 @@ async function performHistoricActionsWithDeviceID() {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify(historicDate),
         };
         // await clearOldDataAndGraphs();
-        const responseData = await fetch("/historicDData", historicDataOptions);
+        const responseData = await fetchWithToken("/historicDData", historicDataOptions);
         jsonData = await responseData.json();
         if (simulationStatus === true && jsonData['performanceFactor'] && jsonData['performanceFactor'].length !== jsonData['isc'].length) {
 
@@ -832,12 +829,11 @@ async function performActionsWithDeviceID() {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(dataPage),
     };
 
-    const responseuserJWTToken = await fetch("/getUserJWTTokenfortenantdashboard", options);
+    const responseuserJWTToken = await fetchWithToken("/getUserJWTTokenfortenantdashboard", options);
     const getUserJWTtokenResponse = await responseuserJWTToken.json();
     const getUserJWTToken = getUserJWTtokenResponse.token;
 
@@ -1060,13 +1056,13 @@ async function performActionsWithDeviceID() {
             predictionText = document.getElementById("ml-prediction");
             switch (prediction) {
                 case "0":
-                    predictionText.innerText = "Predition: Good curve";
+                    predictionText.innerText = "Prediction: Good curve";
                     break;
                 case "1":
-                    predictionText.innerText = "Prediction: Degradation due to series resistance has been detected";
+                    predictionText.innerText = "Prediction: Degradation due to series resistance might be detected";
                     break;
                 case "2":
-                    predictionText.innerText = "Prediction: Degradation due to shunt resistance has been detected";
+                    predictionText.innerText = "Prediction: Degradation due to shunt resistance might be detected";
                     break;
                 case "3":
                     predictionText.innerText = "Prediction: Mismatch loss has been detected.";
@@ -1122,12 +1118,11 @@ async function performActionsWithDeviceID() {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json",
-                                'Authorization': `Bearer ${token}`,
                             },
                             body: JSON.stringify(simulatedCurvy),
                         };
 
-                        const responseSimCurvy = await fetch("/deviceAttribute", simCurvyOptions);
+                        const responseSimCurvy = await fetchWithToken("/deviceAttribute", simCurvyOptions);
                         const simulatedCurvyData = await responseSimCurvy.json();
                         sessionStorage.setItem('simCurrent', handleNull(simulatedCurvyData["Current"]));
                         sessionStorage.setItem('simVoltage', handleNull(simulatedCurvyData["Voltage"]));
@@ -1513,12 +1508,11 @@ async function getsparklineCurve() {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(dataPageSparkline),
     };
 
-    const responseSparkline = await fetch("/customerSparklineDeviceTelemetry", optionsSparkline);
+    const responseSparkline = await fetchWithToken("/customerSparklineDeviceTelemetry", optionsSparkline);
     let trendlineData;
     try {
         trendlineData = await responseSparkline.json();
@@ -1667,11 +1661,10 @@ async function remoteCurvyScan(pageIdentifier) {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify(dataPageScan),
         };
-        const responseScan = await fetch("/scanIVCurvy", optionScan);
+        const responseScan = await fetchWithToken("/scanIVCurvy", optionScan);
 
         if (responseScan.ok) {
             resultElement.innerHTML = '<iconify-icon icon="eos-icons:hourglass" flip="horizontal,vertical"></iconify-icon> Scan In Progress...';
@@ -2308,7 +2301,7 @@ function faultcodedecode(faultCodeVal) {
         16384: "Cap Connect Fault",
     };
     const faultErrors = nonZeroFaults.map(faultCode => errorList[faultCode]);
-    const errorMessage = faultErrors.join("<br>");
+    const errorMessage = faultErrors.join("\n\n");
     return errorMessage;
 };
 
@@ -2537,12 +2530,11 @@ async function getsimulationstatus() {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(dataSimulationStatus),
     };
 
-    const responseSimulationStstus = await fetch("/getsimulationStatus", optionSimulationStatus);
+    const responseSimulationStstus = await fetchWithToken("/getsimulationStatus", optionSimulationStatus);
     const simulationresponseData = await responseSimulationStstus.json();
 
     let foundModelKey = false;
@@ -2651,13 +2643,12 @@ async function getfaultdata() {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(requestfaultData),
     };
 
     try {
-        const responsefaultDataoption = await fetch("/getFaultLog", requestfaultDataoption);
+        const responsefaultDataoption = await fetchWithToken("/getFaultLog", requestfaultDataoption);
         responseJson = await responsefaultDataoption.json();
 
         const faultTableDiv = document.getElementById('fault-table');

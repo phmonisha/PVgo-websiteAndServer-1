@@ -1,4 +1,4 @@
-import { getToken, createAlert } from "./otherFunc.js";
+import { getToken, fetchWithToken, createAlert } from "./otherFunc.js";
 
 const bodyElement = document.querySelector('body');
 
@@ -39,12 +39,11 @@ document.addEventListener("DOMContentLoaded", async (event) => {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(datapageDeviceList),
     };
 
-    const responseDeviceList = await fetch("/customerEntityList", optionsDDeviceList);
+    const responseDeviceList = await fetchWithToken("/customerEntityList", optionsDDeviceList);
     const deviceListJson = await responseDeviceList.json();
     deviceListArray = deviceListJson.data;
     deviceListArray.forEach(entry => {
@@ -59,12 +58,11 @@ document.addEventListener("DOMContentLoaded", async (event) => {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(dataPageIdentifier),
     };
 
-    const responseID = await fetch("/getSessionDeviceId", optionsDeviceList);
+    const responseID = await fetchWithToken("/getSessionDeviceId", optionsDeviceList);
 
     const responseDeviceID = await responseID.json();
 
@@ -343,12 +341,11 @@ async function performHistoricActionsWithDeviceID() {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify(historicDate),
         };
         // await clearOldDataAndGraphs();
-        const responseData = await fetch("/historicDData", historicDataOptions);
+        const responseData = await fetchWithToken("/historicDData", historicDataOptions);
         jsonData = await responseData.json();
 
         if (simulationStatus === true && jsonData['performanceFactor'] && jsonData['performanceFactor'].length !== jsonData['isc'].length) {
@@ -612,10 +609,9 @@ async function performActionsWithDeviceID() {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`,
         },
     };
-    const responseuserJWTToken = await fetch("/getUserJWTToken", optionsuserJWTToken);
+    const responseuserJWTToken = await fetchWithToken("/getUserJWTToken", optionsuserJWTToken);
     const getUserJWTtokenResponse = await responseuserJWTToken.json();
     const getUserJWTToken = getUserJWTtokenResponse.token;
 
@@ -837,13 +833,13 @@ async function performActionsWithDeviceID() {
             predictionText = document.getElementById("ml-prediction");
             switch (prediction) {
                 case "0":
-                    predictionText.innerText = "Predition: Good curve";
+                    predictionText.innerText = "Prediction: Good curve";
                     break;
                 case "1":
-                    predictionText.innerText = "Prediction: Degradaiton due to series resistance has been detected";
+                    predictionText.innerText = "Prediction: Degradation due to series resistance might be detected";
                     break;
                 case "2":
-                    predictionText.innerText = "Prediction: Degradaiton due to shunt resistance has been detected";
+                    predictionText.innerText = "Prediction: Degradation due to shunt resistance might be detected";
                     break;
                 case "3":
                     predictionText.innerText = "Prediction: Mismatch loss has been detected.";
@@ -903,11 +899,10 @@ async function performActionsWithDeviceID() {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json",
-                                'Authorization': `Bearer ${token}`,
                             },
                             body: JSON.stringify(simulatedCurvy),
                         };
-                        const responseSimCurvy = await fetch("/deviceAttribute", simCurvyOptions);
+                        const responseSimCurvy = await fetchWithToken("/deviceAttribute", simCurvyOptions);
                         const simulatedCurvyData = await responseSimCurvy.json();
                         sessionStorage.setItem('simCurrent', handleNull(simulatedCurvyData["Current"]));
                         sessionStorage.setItem('simVoltage', handleNull(simulatedCurvyData["Voltage"]));
@@ -1298,12 +1293,11 @@ async function getsparklineCurve() {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(dataPageSparkline),
     };
 
-    const responseSparkline = await fetch("/customerSparklineDeviceTelemetry", optionsSparkline);
+    const responseSparkline = await fetchWithToken("/customerSparklineDeviceTelemetry", optionsSparkline);
     let trendlineData;
     try {
         trendlineData = await responseSparkline.json();
@@ -1315,6 +1309,7 @@ async function getsparklineCurve() {
 };
 
 async function createSparklineImage(elementID, value_sparline) {
+    document.getElementById(elementID).classList.remove('image-modify2');
     let trendLineData;
     let extracteddata = [];
 
@@ -1432,11 +1427,11 @@ async function createSparklineImage(elementID, value_sparline) {
     };
     Plotly.newPlot(elementID, [trace], layout, config);
 
-    Plotly.toImage(elementID, { format: 'svg', width: 250, height: 50 }).then(function (url) {
-        document.getElementById(elementID).src = url;
-        document.getElementById(elementID).classList.remove('image-modify2');
-        document.getElementById(elementID).classList.add('sparklineimages');
-    });
+    // Plotly.toImage(elementID, { format: 'svg', width: 250, height: 50 }).then(function (url) {
+    //     document.getElementById(elementID).src = url;
+    //     document.getElementById(elementID).classList.remove('image-modify2');
+    //     document.getElementById(elementID).classList.add('sparklineimages');
+    // });
 };
 
 async function remoteCurvyScan(pageIdentifier) {
@@ -1451,11 +1446,10 @@ async function remoteCurvyScan(pageIdentifier) {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify(dataPageScan),
         };
-        const responseScan = await fetch("/scanIVCurvy", optionScan);
+        const responseScan = await fetchWithToken("/scanIVCurvy", optionScan);
 
         if (responseScan.ok) {
             resultElement.innerHTML = '<iconify-icon icon="eos-icons:hourglass" flip="horizontal,vertical"></iconify-icon> Scan In Progress...';
@@ -2093,7 +2087,7 @@ function faultcodedecode(faultCodeVal) {
         16384: "Cap Connect Fault",
     };
     const faultErrors = nonZeroFaults.map(faultCode => errorList[faultCode]);
-    const errorMessage = faultErrors.join("<br>");
+    const errorMessage = faultErrors.join("\n\n");
     return errorMessage;
 };
 
@@ -2323,12 +2317,11 @@ async function getsimulationstatus() {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(dataSimulationStatus),
     };
 
-    const responseSimulationStstus = await fetch("/getsimulationStatus", optionSimulationStatus);
+    const responseSimulationStstus = await fetchWithToken("/getsimulationStatus", optionSimulationStatus);
     const simulationresponseData = await responseSimulationStstus.json();
 
     let foundModelKey = false;
@@ -2435,13 +2428,12 @@ async function getfaultdata() {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(requestFaultData),
     };
 
     try {
-        const responseFaultData = await fetch("/getFaultLog", requestFaultDataOptions);
+        const responseFaultData = await fetchWithToken("/getFaultLog", requestFaultDataOptions);
         responseJson = await responseFaultData.json();
 
         const faultTableDiv = document.getElementById('fault-table');
@@ -2531,14 +2523,37 @@ document.getElementById('downloadButton').addEventListener('click', async functi
 
     let currentPoints;
     let voltagePoints;
-    let powerPoints;
+    let simulatedCurrentPoints;
+    let simulatedVoltagePoints;
     currentPoints = JSON.parse(sessionStorage.getItem('currentPoints'));
     voltagePoints = JSON.parse(sessionStorage.getItem('voltagepoints'));
+    simulatedCurrentPoints = sessionStorage.getItem('simCurrent');
+    simulatedVoltagePoints = sessionStorage.getItem('simVoltage');
+
+    let formattedSimulatedVoltagePoints;
+
+    if (!simulatedVoltagePoints) {
+        // If simulatedVoltagePoints is empty, fill with zeros matching the length of currentPoints
+        formattedSimulatedVoltagePoints = Array(currentPoints.length).fill(0);
+    } else {
+        // Parse and format if not empty
+        formattedSimulatedVoltagePoints = simulatedVoltagePoints.split(',').map(Number);
+    };
+
+    let formattedsimulatedCurrentPoints;
+    if (!simulatedCurrentPoints) {
+        // If simulatedVoltagePoints is empty, fill with zeros matching the length of currentPoints
+        formattedsimulatedCurrentPoints = Array(currentPoints.length).fill(0);
+    } else {
+        // Parse and format if not empty
+        formattedsimulatedCurrentPoints = simulatedCurrentPoints.split(',').map(Number);
+    };
 
     // Combine data into CSV format
-    let csvContent = "Voltage,Current,Power\n";
+    let csvContent = "Voltage,Current,Power,SimulatedVoltage,SimulatedCurrents\n";
     for (let i = 0; i < currentPoints.length; i++) {
-        csvContent += `${voltagePoints[i]},${currentPoints[i] / 1000},${(voltagePoints[i] * (currentPoints[i] / 1000)).toFixed(3)}\n`;
+        // csvContent += `${voltagePoints[i]},${currentPoints[i] / 1000},${(voltagePoints[i] * (currentPoints[i] / 1000)).toFixed(3)}\n`;
+        csvContent += `${voltagePoints[i]},${currentPoints[i] / 1000},${(voltagePoints[i] * (currentPoints[i] / 1000)).toFixed(3)},${formattedSimulatedVoltagePoints[i]},${formattedsimulatedCurrentPoints[i]}\n`;
     }
 
     // Create a Blob from the CSV content

@@ -1,4 +1,4 @@
-import { getToken, createAlert } from "./otherFunc.js";
+import { getToken, fetchWithToken, createAlert } from "./otherFunc.js";
 
 const formE = document.getElementById("editCustomerForm");
 const token = getToken();
@@ -19,13 +19,12 @@ formE.addEventListener("submit", async (event) => {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(jsonData),
     };
 
     try {
-        const response = await fetch(url, option);
+        const response = await fetchWithToken(url, option);
 
         if (response.ok) {
             const json = await response.json();

@@ -1,4 +1,4 @@
-import { getToken } from "./otherFunc.js";
+import { getToken, fetchWithToken } from "./otherFunc.js";
 
 
 document.addEventListener("DOMContentLoaded", async (event) => {
@@ -23,13 +23,12 @@ document.addEventListener("DOMContentLoaded", async (event) => {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify(data),
         };
 
         try {
-            response = await fetch(url, options);
+            response = await fetchWithToken(url, options);
 
             if (response.ok) {
                 name = await response.json();
@@ -51,13 +50,12 @@ document.addEventListener("DOMContentLoaded", async (event) => {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify(data),
         };
 
         try {
-            response = await fetch(url, options);
+            response = await fetchWithToken(url, options);
 
             if (response.ok) {
                 name = await response.json();

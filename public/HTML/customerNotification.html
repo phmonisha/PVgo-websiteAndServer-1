@@ -11,14 +11,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap"
-          rel="stylesheet">
+        rel="stylesheet">
     <link
-            href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap"
-            rel="stylesheet">
+        href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script type="module" src="../js/funcFE.js"></script>
 </head>
 
-<body>
+<body class="page-identifier" data-page="customerNotification">
     <nav class="navbar-layout background">
         <div class="nav-list-layout">
             <div class="logoLayout"><img src="../images/img.PNG" alt="logo"></div>
@@ -34,7 +35,9 @@
             <div class="profile">
                 <div class="profileImage"></div>
                 <div class="roleName"></div>
-                <div><button type="submit" id="logoutButton" onclick="toggleMenu()"><div id="profileImage"></div></button></div>
+                <div><button type="submit" id="logoutButton" onclick="toggleMenu()">
+                        <div id="profileImage"></div>
+                    </button></div>
                 <!-- <div><img src="../images/logout_icon.png" alt="profileImage"></div> -->
             </div>
         </div>
@@ -76,22 +79,26 @@
                     <p style="font-size: 18px;" id="customerName"></p>
                     <p style="font-size: 13px;">Customer</p>
                 </li>
-                <li><a href="customerDevice.html" class="sub-menu-link"><img src="../images/devices.png" class="imgWidth">
-                    <p>Device</p>
-                    <span>></span>
-                </a></li>
-                <li><a href="customerDashboard.html" class="sub-menu-link"><img src="../images/dashboard.png" class="imgWidth">
-                    <p>Dashboard</p>
-                    <span>></span>
-                </a></li>
-                <li><a href="customerAlarm.html" class="sub-menu-link"><img src="../images/alarm-left.png" class="imgWidth">
-                    <p>Alarm</p>
-                    <span>></span>
-                </a></li>
-                <li><a href="customerNotification.html" class="sub-menu-link"><img src="../images/notification.png" class="imgWidth">
-                    <p>Notification</p>
-                    <span>></span>
-                </a></li>
+                <li><a href="customerDevice.html" class="sub-menu-link"><img src="../images/devices.png"
+                            class="imgWidth">
+                        <p>Device</p>
+                        <span>></span>
+                    </a></li>
+                <li><a href="customerDashboard.html" class="sub-menu-link"><img src="../images/dashboard.png"
+                            class="imgWidth">
+                        <p>Dashboard</p>
+                        <span>></span>
+                    </a></li>
+                <li><a href="customerAlarm.html" class="sub-menu-link"><img src="../images/alarm-left.png"
+                            class="imgWidth">
+                        <p>Alarm</p>
+                        <span>></span>
+                    </a></li>
+                <li><a href="customerNotification.html" class="sub-menu-link"><img src="../images/notification.png"
+                            class="imgWidth">
+                        <p>Notification</p>
+                        <span>></span>
+                    </a></li>
             </ul>
         </div>
     </section>
@@ -101,29 +108,101 @@
 
             <h2 style="text-align: center;">NOTIFICATION</h2>
 
-        <div class="up">
-            <div class="head-search">
-                <form action="">
-                    <input type="text" id="search" placeholder="Search">
-                </form>
+            <div class="up">
+                <div class="head-search">
+                    <form action="">
+                        <input type="text" id="search" placeholder="Search">
+                    </form>
+                </div>
+                <div class="head-name">
+                    <!-- <button class="addDeviceBtn" id="open-popup"><img src="../images/plus_icon.png"
+                                                                  alt="profileImage"></button> -->
+                </div>
             </div>
-            <div class="head-name">
-                <button class="addDeviceBtn" id="open-popup"><img src="../images/plus_icon.png"
-                                                                  alt="profileImage"></button>
-            </div>
-        </div>
 
-        <ol class="list list-view-filter" id="table-body">
-            <li>
-                <div class="grid-container"  style="padding-top: 10px; font-size: 13px; font-family: Helvetica"><br><p>ITEM COUNT ZERO</p><br></div>
-            </li>
-        </ol>
+            <ol class="list list-view-filter" id="table-body">
+                <!-- <li>
+                    <div class="grid-container">
+                        <div class="grid-item left-allign text-bigger">Workshop Solis</div>
+                        <div class="grid-item right-allign">11/06/2024, 09:14:16 am</div>
+                        <div class="grid-item left-allign name-length">PVgo Alarm - Device activity generated</div>
+                        <div class="grid-item right-allign sub-grid-container">
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item addDevice">
+                                <button class="btn-alarm">Go to device</button>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+
+                <li>
+                    <div class="grid-container">
+                        <div class="grid-item left-allign text-bigger">General</div>
+                        <div class="grid-item right-allign">11/06/2024, 09:14:16 am</div>
+                        <div class="grid-item left-allign name-length">App update available<br><br>There is an update available for the app on Google Play store and Apple store</div>
+                        <div class="grid-item right-allign sub-grid-container">
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item addDevice">
+                            </div>
+                        </div>
+                    </div>
+                </li>
+
+                <li>
+                    <div class="grid-container">
+                        <div class="grid-item left-allign text-bigger">Workshop Solis</div>
+                        <div class="grid-item right-allign">11/06/2024, 09:14:16 am</div>
+                        <div class="grid-item left-allign name-length">PVgo Alarm - Device activity generated</div>
+                        <div class="grid-item right-allign sub-grid-container">
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item"></div>
+                            <div class="sub-grid-item addDevice">
+                                <button class="btn-alarm">Go to device</button>
+                            </div>
+                        </div>
+                    </div>
+                </li> -->
+            </ol>
+
+            <div id="pagination">
+                <button id="prev-button" class="btn-lypage">&lt;&lt;</button>
+                <div id="pagination-numbers"></div>
+                <button id="next-button" class="btn-lypage">&gt;&gt;</button>
+            </div>
+
+            <div class="topbarContent">
+                <label for="items-per-page">Items Per Page:</label>
+                <input type="number" id="items-per-page" value="5">
+            </div>
 
         </div>
     </section>
 
-        <div id="confirmContainer"></div>
-        <div id="alertContainer"></div>
+    <div id="confirmContainer"></div>
+    <div id="alertContainer"></div>
 
     <!-- <div>
         <form class="logoutFloat">
